@@ -18,14 +18,16 @@ SOURCES += main.cpp\
     userpage.cpp \
     updatepage.cpp \
     serial.cpp \
-    packet.cpp
+    packet.cpp \
+    crc16.cpp
 
 HEADERS  += dialog.h \
     configpage.h \
     userpage.h \
     updatepage.h \
     serial.h \
-    packet.h
+    packet.h \
+    crc16.h
 
 RESOURCES   += dialog.qrc
 

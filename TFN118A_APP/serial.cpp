@@ -79,7 +79,7 @@ bool serial::COMBtnClick()
 
 void serial::sendData(QByteArray data)
 {
-
     m_serialPort->write(data);
 }
+
 
