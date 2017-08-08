@@ -244,11 +244,19 @@ void ConfigPage::createExtension()
     QGroupBox *searchDeviceGroup = new QGroupBox("查询设备");
     QLabel *searchDevicelabel = new QLabel("查询时间");
     searchTimeCombox = new QComboBox;
-    QStringList searchTimeList = (QStringList() << "2s" << "1s" << "3s" << "4s" << "5s" << "6s"
-                              << "7s");
-    searchTimeCombox->addItems(searchTimeList);
 
-    lpfilterCombox = new QCheckBox("低电过滤");
+    QStringList searchTimeList;
+    for(uint8_t i = 1; i< 8 ;i++)
+    {
+
+        QString searchTimeStr = QString::number(i);
+        searchTimeStr += "s";
+        searchTimeList << searchTimeStr;
+    }
+    searchTimeCombox->addItems(searchTimeList);
+    searchTimeCombox->setCurrentIndex(2);
+
+    lpfilterCheckBox = new QCheckBox("低电过滤");
     rssiCheckBox = new QCheckBox("RSSI过滤");
     rssiCombox = new QComboBox;
     QStringList rssiList;
@@ -260,15 +268,16 @@ void ConfigPage::createExtension()
         rssiList << rssistr;
     }
     rssiCombox->addItems(rssiList);
+    rssiCombox->setCurrentIndex(64);
     rssiCombox->setDisabled(true);
 
-    QPushButton *searchTagBtn = new QPushButton("查询标签");
-    QPushButton *searchReaderBtn = new QPushButton("查询读写器");
+    searchTagBtn = new QPushButton("查询标签");
+    searchReaderBtn = new QPushButton("查询读写器");
 
     QGridLayout *searchDeviceLayout = new QGridLayout;
     searchDeviceLayout->addWidget(searchDevicelabel,0,0);
     searchDeviceLayout->addWidget(searchTimeCombox,0,1);
-    searchDeviceLayout->addWidget(lpfilterCombox,1,0,1,2);
+    searchDeviceLayout->addWidget(lpfilterCheckBox,1,0,1,2);
     searchDeviceLayout->addWidget(rssiCheckBox,2,0);
     searchDeviceLayout->addWidget(rssiCombox,2,1);
     searchDeviceLayout->addWidget(searchTagBtn,3,0);
@@ -279,18 +288,34 @@ void ConfigPage::createExtension()
     //自动上报
     QGroupBox *autoreportGroup = new QGroupBox("自动上报");
     QLabel *leaveTimeLabel = new QLabel("离开时间:");
-    QComboBox *leaveTimeCombox = new QComboBox;
-    QStringList leaveTimeList = (QStringList() << "3s" << "1s" << "2s" << "4s" << "5s" << "6s"
-                              << "7s" << "8s" << "9s" << "10s");
+    leaveTimeCombox = new QComboBox;
+
+    QStringList leaveTimeList;
+    for(uint8_t i = 1; i< 11 ;i++)
+    {
+
+        QString leaveTimeStr = QString::number(i);
+        leaveTimeStr += "s";
+        leaveTimeList << leaveTimeStr;
+    }
     leaveTimeCombox->addItems(leaveTimeList);
+    leaveTimeCombox->setCurrentIndex(2);
 
     QLabel *reportTimeLabel = new QLabel("上报间隔:");
-    QComboBox *reportTimeCombox = new QComboBox;
-    QStringList reportTimeList = (QStringList() << "3s" << "1s" << "2s" << "4s" << "5s" << "6s"
-                              << "7s");
-    reportTimeCombox->addItems(reportTimeList);
+    reportTimeCombox = new QComboBox;
 
-    QCheckBox *lpfilterAutoCombox = new QCheckBox("低电过滤");
+    QStringList reportTimeList;
+    for(uint8_t i = 1; i< 8 ;i++)
+    {
+        QString reportTimeStr = QString::number(i);
+        reportTimeStr += "s";
+        reportTimeList << reportTimeStr;
+    }
+    reportTimeCombox->addItems(reportTimeList);
+    reportTimeCombox->setCurrentIndex(2);
+
+
+    lpfilterAutoCheckBox = new QCheckBox("低电过滤");
     rssiAutoCheckBox = new QCheckBox("RSSI过滤");
     rssiAutoCombox = new QComboBox;
     QStringList rssiAutoList;
@@ -302,16 +327,17 @@ void ConfigPage::createExtension()
         rssiAutoList << rssiAutostr;
     }
     rssiAutoCombox->addItems(rssiAutoList);
+    rssiAutoCombox->setCurrentIndex(64);
     rssiAutoCombox->setDisabled(true);
-    QPushButton *AutoReportOpenBtn = new QPushButton("打开自动上报");
-    QPushButton *AutoReportCloseBtn = new QPushButton("关闭自动上报");
+    AutoReportOpenBtn = new QPushButton("打开自动上报");
+    AutoReportCloseBtn = new QPushButton("关闭自动上报");
 
     QGridLayout *autoreportLayout = new QGridLayout;
     autoreportLayout->addWidget(leaveTimeLabel,0,0);
     autoreportLayout->addWidget(leaveTimeCombox,0,1);
     autoreportLayout->addWidget(reportTimeLabel,2,0);
     autoreportLayout->addWidget(reportTimeCombox,2,1);
-    autoreportLayout->addWidget(lpfilterAutoCombox,3,0);
+    autoreportLayout->addWidget(lpfilterAutoCheckBox,3,0);
     autoreportLayout->addWidget(rssiAutoCheckBox,4,0);
     autoreportLayout->addWidget(rssiAutoCombox,4,1);
     autoreportLayout->addWidget(AutoReportOpenBtn,5,0);
@@ -320,11 +346,27 @@ void ConfigPage::createExtension()
 
 
     //设备信息
-    QTextEdit *infoDevice = new QTextEdit;
+    infoDevice = new QTableView;
+    device_model = new QStandardItemModel();
+    device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
+    device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+     //利用setModel()方法将数据模型与QTableView绑定
+    infoDevice->setModel(device_model);
+//    infoDevice->setEditTriggers(QAbstractItemView::NoEditTriggers);//只读
+    //如果你用在QTableView中使用右键菜单，需启用该属性
+    infoDevice->setContextMenuPolicy(Qt::CustomContextMenu);
+
+//    device_model->setItem(0,1,new QStandardItem("张三"));
+//    device_model->setItem(1,1,new QStandardItem("张三"));
     QGridLayout *extensionLayout = new QGridLayout;
     extensionLayout->addWidget(searchDeviceGroup,0,0,1,1);
     extensionLayout->addWidget(autoreportGroup,0,1,1,1);
-    extensionLayout->addWidget(infoDevice,1,0,1,2);
+    extensionLayout->addWidget(infoDevice,1,0,1,3);
 
 
     //扩展窗口
@@ -334,8 +376,10 @@ void ConfigPage::createExtension()
     extensionMainLayout->setMargin(0);
     extensionMainLayout->addLayout(extensionLayout);
     extension->setLayout(extensionMainLayout);
+    extension->setMinimumHeight(400);
+    extension->setMinimumWidth(600);
     extension->setMaximumHeight(400);
-    extension->setMaximumWidth(600);
+    extension->setMaximumWidth(800);
     extension->hide();
     event_init();
     //
@@ -348,8 +392,34 @@ void ConfigPage::event_init()
     connect(setParaBtn,&QPushButton::clicked,this,&ConfigPage::setParaBuf);//设置参数
     connect(WRFileBtn,&QPushButton::clicked,this,&ConfigPage::WriteReadFile);//文件操作
     connect(rssiCheckBox,&QCheckBox::clicked,rssiCombox,&QComboBox::setEnabled);//选择
+    connect(rssiAutoCheckBox,&QCheckBox::clicked,rssiAutoCombox,&QComboBox::setEnabled);
     connect(messageTedt,&QTextEdit::textChanged,this,&ConfigPage::msgMaxLength);//消息最大长度
     connect(messageBtn,&QPushButton::clicked,this,&ConfigPage::msgSend);//消息下发
+    connect(searchTagBtn,&QPushButton::clicked,this,&ConfigPage::SearchTag);//查询标签
+    connect(searchReaderBtn,&QPushButton::clicked,this,&ConfigPage::SearchReader);//查询读写器
+    connect(AutoReportOpenBtn,&QPushButton::clicked,this,&ConfigPage::AutoReportOpen);//打开自动上报
+    connect(AutoReportCloseBtn,&QPushButton::clicked,this,&ConfigPage::AutoReportClose);//关闭自动上报
+}
+//清空数据
+void ConfigPage::ClearReadFileData()
+{
+    dataTedt->clear();
+}
+//显示读取内容数据
+void ConfigPage::ShowReadFileData(QByteArray Data_Src)
+{
+    QString StrDataDes = QString::fromLatin1(Data_Src.toHex());
+    QString StrDes;
+    for(int i=0;i<StrDataDes.length();)
+    {
+        StrDes+=StrDataDes[i];
+        StrDes+=StrDataDes[i+1];
+        StrDes+=" ";
+        i=i+2;
+    }
+
+    qDebug() <<"数据内容"<< StrDes;
+    dataTedt->setPlainText(StrDes);
 }
 
 
@@ -450,16 +520,7 @@ void ConfigPage::setParaBuf()
     config_Btn = setparaBtnPD;//按键按下
     emit sendsignal(sendparabuff);
 }
-//查询标签
-void ConfigPage::listTag()
-{
-   //time
-   QString str_search_time =  searchTimeCombox->currentText();
-   str_search_time.chop(1);//移除最后一位
-   char serch_time = str_search_time.toInt();
-   //rssi
-   //   str_search_time = str_search_time
-}
+
 /****************************************************
 串口通信 上位机->接收器
 写命令F0
@@ -544,6 +605,7 @@ void ConfigPage::WriteReadFile()
         QByteArray ReadBuff;
         QString DestIDSrc1 = TargetIDLineEdt1->text();
         QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
+
         ReadBuff+=U_CMD_FILE_READ;//命令
         ReadBuff+=DestIDDec1;//目标ID
         ReadBuff+=OverTimeDest;//超时时间
@@ -595,10 +657,11 @@ QByteArray ConfigPage::QString2Unicode(QString src)
 /****************************************************
 串口通信 上位机->接收器
 消息命令89
+信息内容构成：消息长度+消息内容
 消息长度1字节
 消息内容
 ******************************************************/
-#define GBK 0
+#define GBK 1
 void ConfigPage::msgSend()
 {
     QByteArray MsgBuff;//消息缓存
@@ -615,6 +678,216 @@ void ConfigPage::msgSend()
     config_Btn = MsgBtnPD;//按键按下
     qDebug() <<"消息命令内容"<< MsgBuff.toHex();
     emit sendsignal(MsgBuff);
+}
+/****************************************************
+串口通信 上位机->接收器
+列出标签命令F4 列出读写器命令F5
+信息内容
+0：bit3~1 查询时间
+   bit0：1使能低电过滤；0不使能低电过滤
+1: bit7:1:使能RSSI过滤；0:不使能RSSI过滤
+   bit6~0  0~127 RSSI过滤值
+消息长度1字节
+消息内容
+******************************************************/
+#define LP_FILTEREN_Pos   0
+#define LP_FILTEREN_Msk   0x01  //使能低电过滤
+#define RSSI_FILTEREN_Pos 7
+#define RSSI_FILTEREN_Msk 0x80  //使能RSSI过滤
+#define RSSI_FILTERVALUE_Pos 0
+#define RSSI_FILTERVALUE_Msk 0x7F  //RSSI过滤值
+#define SEARCH_TIME_Pos     1
+#define SEARCH_TIME_Msk     0x0E   //
+void ConfigPage::SearchTag()
+{
+    QByteArray SearchTagBuf;
+    char temp[2]={0,0};
+    QString SearchTimeSrc = searchTimeCombox->currentText();
+    SearchTimeSrc.chop(1);//移除最后一位s
+    char SearchTime = SearchTimeSrc.toInt();
+    temp[0] = (SearchTime<<SEARCH_TIME_Pos)&SEARCH_TIME_Msk;
+    if(lpfilterCheckBox->isChecked())
+    {
+        temp[0]|=LP_FILTEREN_Msk;
+    }
+    if(rssiCheckBox->isChecked())
+    {
+        temp[1] = RSSI_FILTEREN_Msk;
+        QString SearchRSSISrc = rssiCombox->currentText();
+        SearchRSSISrc.chop(3);//移除dbm
+        char SearchRSSI = SearchRSSISrc.toInt();
+        temp[1] |= (SearchRSSI&RSSI_FILTERVALUE_Msk)<<RSSI_FILTERVALUE_Pos;
+    }
+    else
+    {
+        temp[1] = 0x00;
+    }
+
+    SearchTagBuf[0] = (char)U_CMD_LIST_TAG;
+    SearchTagBuf[1] = temp[0];
+    SearchTagBuf[2] = temp[1];
+    config_Btn = SesrchTagPD;//按键按下
+    device_model->clear();
+    device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
+    device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    qDebug() <<"查询标签"<< SearchTagBuf.toHex();
+    emit sendsignal(SearchTagBuf);
+}
+//查询读写器
+void ConfigPage::SearchReader()
+{
+    QByteArray SearchReaderBuf;
+    char temp[2]={0,0};
+    QString SearchTimeSrc = searchTimeCombox->currentText();
+    SearchTimeSrc.chop(1);//移除最后一位s
+    char SearchTime = SearchTimeSrc.toInt();
+    temp[0] = (SearchTime<<SEARCH_TIME_Pos)&SEARCH_TIME_Msk;
+    if(lpfilterCheckBox->isChecked())
+    {
+        temp[0]|=LP_FILTEREN_Msk;
+    }
+    if(rssiCheckBox->isChecked())
+    {
+        temp[1] = RSSI_FILTEREN_Msk;
+        QString SearchRSSISrc = rssiCombox->currentText();
+        SearchRSSISrc.chop(3);//移除dbm
+        char SearchRSSI = SearchRSSISrc.toInt();
+        temp[1] |= (SearchRSSI&RSSI_FILTERVALUE_Msk)<<RSSI_FILTERVALUE_Pos;
+    }
+    else
+    {
+        temp[1] = 0x00;
+    }
+
+    SearchReaderBuf[0] = (char)U_CMD_LIST_READER;
+    SearchReaderBuf[1] = temp[0];
+    SearchReaderBuf[2] = temp[1];
+    config_Btn = SesrchTagPD;//按键按下
+    device_model->clear();
+    device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
+    device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("DATA")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("VER")));
+    qDebug() <<"查询读写器"<< SearchReaderBuf.toHex();
+    emit sendsignal(SearchReaderBuf);
+}
+
+/****************************************************
+串口通信 上位机->接收器
+自动上报命令F6
+信息内容
+0：bit3~1 自动上报时间
+   bit0：1使能低电过滤；0不使能低电过滤
+1: bit7:1:使能RSSI过滤；0:不使能RSSI过滤
+   bit6~0  0~127 RSSI过滤值
+2：bit0: 1:打开自动上报命令，0：关闭自动上报
+消息长度1字节
+消息内容
+******************************************************/
+#define LEAVE_TIME_Msk 0xf0
+#define LEAVE_TIME_Pos 4
+void ConfigPage::AutoReportOpen()
+{
+    QByteArray AutoReportBuf;
+    char temp[2]={0,0};
+    //上报时间
+    QString ReportTimeSrc = reportTimeCombox->currentText();
+    ReportTimeSrc.chop(1);//移除最后一位s
+    char ReportTime = ReportTimeSrc.toInt();
+    //离开时间
+    QString LeaveTimeSrc = leaveTimeCombox->currentText();
+    LeaveTimeSrc.chop(1);//移除最后一位s
+    char LeaveTime = LeaveTimeSrc.toInt();
+    LeaveTime = (LeaveTime<<LEAVE_TIME_Pos)&LEAVE_TIME_Msk;//离开时间
+    temp[0] = (ReportTime<<SEARCH_TIME_Pos)&SEARCH_TIME_Msk;//上报时间
+    temp[0]|=LeaveTime;
+    if(lpfilterAutoCheckBox->isChecked())
+    {
+        temp[0]|=LP_FILTEREN_Msk;
+    }
+    if(rssiAutoCheckBox->isChecked())
+    {
+        temp[1] = RSSI_FILTEREN_Msk;
+        QString rssiAutoSrc = rssiAutoCombox->currentText();
+        rssiAutoSrc.chop(3);//移除dbm
+        char rssiAuto = rssiAutoSrc.toInt();
+        temp[1] |= (rssiAuto&RSSI_FILTERVALUE_Msk)<<RSSI_FILTERVALUE_Pos;
+    }
+    else
+    {
+        temp[1] = 0x00;
+    }
+
+    AutoReportBuf[0] = (char)U_CMD_AUTO_REPORT;
+    AutoReportBuf[1] = temp[0];
+    AutoReportBuf[2] = temp[1];
+    AutoReportBuf[3] = char(0x01);
+    config_Btn = AutoReportPD;//按键按下
+    device_model->clear();
+    device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
+    device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    qDebug() <<"打开自动上报"<< AutoReportBuf.toHex();
+    emit sendsignal(AutoReportBuf);
+}
+
+void ConfigPage::AutoReportClose()
+{
+    QByteArray AutoReportBuf;
+    char temp[2]={0,0};
+    //上报时间
+    QString ReportTimeSrc = reportTimeCombox->currentText();
+    ReportTimeSrc.chop(1);//移除最后一位s
+    char ReportTime = ReportTimeSrc.toInt();
+    //离开时间
+    QString LeaveTimeSrc = leaveTimeCombox->currentText();
+    LeaveTimeSrc.chop(1);//移除最后一位s
+    char LeaveTime = LeaveTimeSrc.toInt();
+    LeaveTime = (LeaveTime<<LEAVE_TIME_Pos)&LEAVE_TIME_Msk;//离开时间
+    temp[0] = (ReportTime<<SEARCH_TIME_Pos)&SEARCH_TIME_Msk;//上报时间
+    temp[0]|=LeaveTime;
+    if(lpfilterAutoCheckBox->isChecked())
+    {
+        temp[0]|=LP_FILTEREN_Msk;
+    }
+    if(rssiAutoCheckBox->isChecked())
+    {
+        temp[1] = RSSI_FILTEREN_Msk;
+        QString rssiAutoSrc = rssiAutoCombox->currentText();
+        rssiAutoSrc.chop(3);//移除dbm
+        char rssiAuto = rssiAutoSrc.toInt();
+        temp[1] |= (rssiAuto&RSSI_FILTERVALUE_Msk)<<RSSI_FILTERVALUE_Pos;
+    }
+    else
+    {
+        temp[1] = 0x00;
+    }
+
+    AutoReportBuf[0] = (char)U_CMD_AUTO_REPORT;
+    AutoReportBuf[1] = temp[0];
+    AutoReportBuf[2] = temp[1];
+    AutoReportBuf[3] = char(0x00);
+    config_Btn = AutoReportPD;//按键按下
+    device_model->clear();
+    device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
+    device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    qDebug() <<"关闭自动上报"<< AutoReportBuf.toHex();
+    emit sendsignal(AutoReportBuf);
 }
 
 

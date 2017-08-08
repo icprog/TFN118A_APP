@@ -2,7 +2,7 @@
 #define PACKET_H
 #include "QWidget"
 #include <QtWidgets>
-
+#include "crc16.h"
 /****************************************************
 串口通信 上位机->接收器
 描述	帧头	长度	协议版本	读写器ID	定位信息	协议流水号
@@ -14,6 +14,7 @@ CRC "长度~信息内容"
 ******************************************************/
 #define U_HEAD_LEN 2
 #define U_LENTH_LEN 2
+#define U_CRC_LEN   2
 #define U_ID_LEN 4
 #define U_PROTOCOL_LEN 1
 #define U_ConfigOT_LEN 1   //下发配置指令，超时字节
@@ -51,6 +52,7 @@ IDX	11/38	12/39
 
 #define packet_head1 0XAA//帧头
 #define packet_head2 0XAA
+#define packet_head  "AAAA"
 #define U_PROTOCOL_VER 0X00//协议
 
 #define ReaderID_LEN 4
@@ -58,17 +60,33 @@ IDX	11/38	12/39
 #define Seq_LEN      1
 #define CMD_LEN      1
 #define WFILE_DATA_LEN    16
-#define CRC16        2
+//#define CRC16        2
 #define WFILE_LEN   ReaderID_LEN+GPS_LEN+Seq_LEN+CMD_LEN+WFILE_DATA_LEN
 //时间设置
-#define U_CMD_TIME_SET							0X90	//时间设置命令
+
 #define U_TIME_SET_LEN                          0X000E  //长度
+#define U_CMD_TIME_SET							0X90	//时间设置命令
+typedef enum
+{
+    U_TIME_SUCESS=0X0000,
+    U_TIME_ERR = 0X0800//超出最大长度
+}UTIME_State_Typedef;
 //参数设置
 #define U_CMD_PARA_SET                          0XF0    //参数设置命令
 #define U_PARA_SET_LEN                          0X0023    //长度
 //文件操作
 #define U_CMD_FILE_WRITE                        0XF0    //写命令
 #define U_CMD_FILE_READ                         0XF1    //读命令
+#define U_FILE_STATE_LEN                        2
+typedef enum
+{
+    FILE_SUCCESS=0X0000,//执行成功
+    FILE_MODE_ERR=0X0600,//操作区不存在
+    FILE_BODER_ERR=0X0601,//超出边界，长度/读偏移量超出
+    FILE_WOFFSET_ERR=0X0602,//写偏移错误
+    FILE_WDATA_ERR=0X0603,//数据错误
+    FILE_TIMEOUT_ERR=0X0604//超时
+}FILE_STATE_Typedef;
 //模式
 #define U_FILE_MODE_PARA						0X01	//内部参数区
 #define U_FILE_MODE_RESERVER					0X02	//保留区
@@ -79,13 +97,41 @@ IDX	11/38	12/39
 #define U_FILE_RESERVER                         0X0000  //保留
 //消息
 #define U_CMD_MSG_PUSH                          0X89   //消息命令
+//消息
+typedef enum
+{
+    U_MSG_SUCESS=0X0000,
+    U_MSG_ERR = 0X0700//超出最大长度
+}UMSG_State_Typedef;
+//获取读写器ID
+#define U_CMD_READER_ID                         0XF2    //读写器ID
+//列出标签
+#define U_CMD_LIST_TAG                          0XF4    //列出标签
+#define U_CMD_LIST_READER                       0XF5    //列出读写器
+#define U_CMD_AUTO_REPORT                       0XF6    //列出读写器
+
+#define MAX_TAG_NUM  21  //每包最大标签个数
+#define TAG_INFO_LEN 11
+#define MAX_PKT_Pos    4
+#define MAX_PKT_Msk    0xf0
+#define CRT_PKT_Msk    0x0f
+
+
 
 class packet
 {
 public:
     packet();
+    ~packet();
     void packet_append(QByteArray *des,QByteArray *src);
+    bool unPACK(QByteArray *des,QByteArray src);//解包
+    uint16_t CRC_Check(QByteArray src);
+    void Packet_Init();
 
+private:
+    crc16 *m_crc16;
+    uint16_t PacketLen;//一包总长度
+    uint8_t u_state =0;//串口接收状态
 //    typedef struct
 //    {
 //        uint8_t head;

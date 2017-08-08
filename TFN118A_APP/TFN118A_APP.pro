@@ -10,7 +10,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = TFN118A_APP
 TEMPLATE = app
-
+DEFINES += QT_NO_DEBUG_OUTPUT
 
 SOURCES += main.cpp\
         dialog.cpp \

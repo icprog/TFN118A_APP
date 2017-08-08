@@ -11,7 +11,9 @@ typedef enum
     setparaBtnPD,
     WriteFileBtnPD,
     ReadFileBtnPD,
-    MsgBtnPD
+    MsgBtnPD,
+    SesrchTagPD,
+    AutoReportPD
 }Btn_Typedef;
 
 class ConfigPage : public QWidget
@@ -23,6 +25,10 @@ public:
     QPushButton *radioBtn;
     void createExtension();
     void event_init();
+    void ShowReadFileData(QByteArray Data_Src);//显示读取的数据
+    void ClearReadFileData();//清空数据
+    QTableView *infoDevice;//设备信息
+    QStandardItemModel *device_model;
 //    QByteArray databuf;
 
     Btn_Typedef config_Btn = idleBtn;
@@ -35,12 +41,7 @@ private:
     QComboBox *alarmCombo;//参数-报警时间
     QLineEdit *TargetIDLineEdt;//目标ID
     QDateTimeEdit *dateEdit;
-    QComboBox *searchTimeCombox;//查询时间
-    QCheckBox *lpfilterCombox;//查询低电滤波
-    QCheckBox *rssiCheckBox;//查询rssi滤波
-    QComboBox *rssiCombox;//查询rssi值
-    QCheckBox *rssiAutoCheckBox;//rssi
-    QComboBox *rssiAutoCombox;//rssi
+
     //消息
     QTextEdit *messageTedt;//消息内容
     QPushButton *messageBtn;//消息下发按钮
@@ -58,18 +59,35 @@ private:
     QPushButton *WRFileBtn;//文件操作按钮
     QByteArray U2GBK(QString unic);//unicode->gbk
     QByteArray QString2Unicode(QString src);//string->unicode
+    //扩展窗口-射频处理
+    QPushButton *searchTagBtn;//查询标签
+    QPushButton *searchReaderBtn;//查询读写器
+    QComboBox *searchTimeCombox;//查询时间
+    QCheckBox *lpfilterCheckBox;//查询低电滤波
+    QCheckBox *rssiCheckBox;//查询rssi滤波
+    QComboBox *rssiCombox;//查询rssi值
 
+    //自动上报
+    QPushButton *AutoReportOpenBtn;
+    QPushButton *AutoReportCloseBtn;
+    QComboBox *reportTimeCombox;//上报时间
+    QComboBox *leaveTimeCombox;//离开时间
+    QCheckBox *rssiAutoCheckBox;//rssi
+    QComboBox *rssiAutoCombox;//rssi
+    QCheckBox *lpfilterAutoCheckBox;//低电过滤
 signals:
     void sendsignal(QByteArray);
 public slots:
     void updateTime();
     void setTimebuf();//更新时间BUFF
     void setParaBuf();//更新参数buff
-    void listTag();
     void WriteReadFile();//写文件操作
     void msgMaxLength();
     void msgSend();//消息下发
-
+    void SearchTag();//查询标签
+    void SearchReader();//查询读写器
+    void AutoReportOpen();
+    void AutoReportClose();
 };
 
 #endif // CONFIGPAGE_H
