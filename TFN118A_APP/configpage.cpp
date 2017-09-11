@@ -208,7 +208,7 @@ ConfigPage::ConfigPage(QWidget *parent) : QWidget(parent)
  //! [1]
 
      //整机测试
-     QPushButton *testBtn = new QPushButton("整机测试");
+      testBtn = new QPushButton("整机测试");
 //     QLabel *stateLable = new QLabel("执行成功");
 //     stateLable->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
 //     stateLable->setFrameStyle(QFrame::Panel | QFrame::Sunken);
@@ -399,6 +399,7 @@ void ConfigPage::event_init()
     connect(searchReaderBtn,&QPushButton::clicked,this,&ConfigPage::SearchReader);//查询读写器
     connect(AutoReportOpenBtn,&QPushButton::clicked,this,&ConfigPage::AutoReportOpen);//打开自动上报
     connect(AutoReportCloseBtn,&QPushButton::clicked,this,&ConfigPage::AutoReportClose);//关闭自动上报
+    connect(testBtn,&QPushButton::clicked,this,&ConfigPage::DeviceTest);//整机测试
 }
 //清空数据
 void ConfigPage::ClearReadFileData()
@@ -408,18 +409,18 @@ void ConfigPage::ClearReadFileData()
 //显示读取内容数据
 void ConfigPage::ShowReadFileData(QByteArray Data_Src)
 {
-    QString StrDataDes = QString::fromLatin1(Data_Src.toHex());
-    QString StrDes;
-    for(int i=0;i<StrDataDes.length();)
-    {
-        StrDes+=StrDataDes[i];
-        StrDes+=StrDataDes[i+1];
-        StrDes+=" ";
-        i=i+2;
-    }
+    QString StrDataDes = QString::fromLatin1(Data_Src.toHex(' '));
+//    QString StrDes;
+//    for(int i=0;i<StrDataDes.length();)
+//    {
+//        StrDes+=StrDataDes[i];
+//        StrDes+=StrDataDes[i+1];
+//        StrDes+=" ";
+//        i=i+2;
+//    }
 
-    qDebug() <<"数据内容"<< StrDes;
-    dataTedt->setPlainText(StrDes);
+    qDebug() <<"数据内容"<< StrDataDes;
+    dataTedt->setPlainText(StrDataDes);
 }
 
 
@@ -467,58 +468,70 @@ void ConfigPage::setTimebuf()
 ******************************************************/
 void ConfigPage::setParaBuf()
 {
-    char txpower = 0x00;
-    char workmode = 0x00;
+
     //参数buff
     QByteArray parabuff;
-    for(int i=0;i< 16;i++)
-        parabuff[i] = 0;
-    QString tag_txpower = pwrCombo->currentText();
-    if(tag_txpower == "-30dBm")
-        txpower |= (0<<TAGP_PWR_Pos);
-    else if(tag_txpower == "-20dBm")
-        txpower |= (1<<TAGP_PWR_Pos);
-    else if(tag_txpower == "-16dBm")
-        txpower |= (2<<TAGP_PWR_Pos);
-    else if(tag_txpower == "-12dBm")
-        txpower |= (3<<TAGP_PWR_Pos);
-    else if(tag_txpower == "-8dBm")
-        txpower |= (4<<TAGP_PWR_Pos);
-    else if(tag_txpower == "-4dBm")
-        txpower |= (5<<TAGP_PWR_Pos);
-    else if(tag_txpower == "0dBm")
-        txpower |= (6<<TAGP_PWR_Pos);
-    else if(tag_txpower == "4dBm")
-        txpower |= (7<<TAGP_PWR_Pos);
-    else
-        txpower|=(6<<TAGP_PWR_Pos);
-    QString tag_workmode = wModeCombo->currentText();
-    if("保存模式" == tag_workmode)
-        workmode|=0x00;
-    else
-        workmode|=0x01;
-
-    QString tag_alarmtime = alarmCombo->currentText();
-    tag_alarmtime.chop(1);//移除最后一位s
-    char alarmtimeSrc = tag_alarmtime.toInt();
-    parabuff[TAGP_PWR_IDX] = txpower;//发射功率
-    parabuff[TAGP_WORKMODE_IDX] =workmode;//工作模式
-    parabuff[TAGP_KEYALARM_IDX] = alarmtimeSrc;//报警时间
-    QByteArray sendparabuff;
     QString DestIDSrc = TargetIDLineEdt->text();
-    QByteArray DestIDDec = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
-    sendparabuff+=DestIDDec;//目标ID
-    sendparabuff+=OVER_TIME;//超时时间
-    sendparabuff+=(char)(U_FILE_RESERVER>>8);//保留
-    sendparabuff+=(char)U_FILE_RESERVER;//保留
-    sendparabuff+=U_FILE_MODE_PARA;//内部参数区
-    sendparabuff+=(char)(U_FILE_OFFSET_RNEW>>8);
-    sendparabuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
-    sendparabuff+=(char)0x10;//长度
-    sendparabuff+=parabuff;
-    qDebug() << "获取参数值:" << sendparabuff.toHex();
     config_Btn = setparaBtnPD;//按键按下
-    emit sendsignal(sendparabuff);
+    if(DestIDSrc.length()<8)
+    {
+        QByteArray error;
+        emit sendsignal(error);
+    }
+    else
+    {
+        char txpower = 0x00;
+        char workmode = 0x00;
+        for(int i=0;i< 16;i++)
+            parabuff[i] = 0;
+        QString tag_txpower = pwrCombo->currentText();
+        if(tag_txpower == "-30dBm")
+            txpower |= (0<<TAGP_PWR_Pos);
+        else if(tag_txpower == "-20dBm")
+            txpower |= (1<<TAGP_PWR_Pos);
+        else if(tag_txpower == "-16dBm")
+            txpower |= (2<<TAGP_PWR_Pos);
+        else if(tag_txpower == "-12dBm")
+            txpower |= (3<<TAGP_PWR_Pos);
+        else if(tag_txpower == "-8dBm")
+            txpower |= (4<<TAGP_PWR_Pos);
+        else if(tag_txpower == "-4dBm")
+            txpower |= (5<<TAGP_PWR_Pos);
+        else if(tag_txpower == "0dBm")
+            txpower |= (6<<TAGP_PWR_Pos);
+        else if(tag_txpower == "4dBm")
+            txpower |= (7<<TAGP_PWR_Pos);
+        else
+            txpower|=(6<<TAGP_PWR_Pos);
+        QString tag_workmode = wModeCombo->currentText();
+        if("保存模式" == tag_workmode)
+            workmode|=0x00;
+        else
+            workmode|=0x01;
+
+        QString tag_alarmtime = alarmCombo->currentText();
+        tag_alarmtime.chop(1);//移除最后一位s
+        char alarmtimeSrc = tag_alarmtime.toInt();
+        parabuff[TAGP_PWR_IDX] = txpower;//发射功率
+        parabuff[TAGP_WORKMODE_IDX] =workmode;//工作模式
+        parabuff[TAGP_KEYALARM_IDX] = alarmtimeSrc;//报警时间
+         QByteArray sendparabuff;
+//        QString DestIDSrc = TargetIDLineEdt->text();
+        QByteArray DestIDDec = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
+        sendparabuff+=DestIDDec;//目标ID
+        sendparabuff+=OVER_TIME;//超时时间
+        sendparabuff+=(char)(U_FILE_RESERVER>>8);//保留
+        sendparabuff+=(char)U_FILE_RESERVER;//保留
+        sendparabuff+=U_FILE_MODE_PARA;//内部参数区
+        sendparabuff+=(char)(U_FILE_OFFSET_RNEW>>8);
+        sendparabuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
+        sendparabuff+=(char)0x10;//长度
+        sendparabuff+=parabuff;
+        qDebug() << "获取参数值:" << sendparabuff.toHex();
+        config_Btn = setparaBtnPD;//按键按下
+        emit sendsignal(sendparabuff);
+    }
+
 }
 
 /****************************************************
@@ -543,93 +556,104 @@ void ConfigPage::setParaBuf()
 ******************************************************/
 void ConfigPage::WriteReadFile()
 {
-    //超时时间
-    char OverTimeDest;
-    QString OverTimeSrc = OverTime->currentText();
-    if("无超时" == OverTimeSrc)
+    QString DestIDSrc1 = TargetIDLineEdt1->text();
+    if(DestIDSrc1.length()<8)
     {
-        OverTimeDest = 0x00;
+        QByteArray error;
+        config_Btn = WriteFileBtnPD;//按键按下
+        emit sendsignal(error);
     }
     else
     {
-        OverTimeSrc.chop(1);//去掉单位s
-        OverTimeDest = OverTimeSrc.toInt();
-    }
-    //参数区
-    char AreaDest;
-    QString AreaSrc = modeCombo->currentText();
-    if("参数区" == AreaSrc)
-    {
-        AreaDest = U_FILE_MODE_PARA;
-    }
-    else if("保留区" == AreaSrc)
-    {
-        AreaDest = U_FILE_MODE_RESERVER;
-    }
-    else if("用户区1" == AreaSrc)
-    {
-        AreaDest = U_FILE_MODE_USER1;
-    }
-    else if("用户区2" == AreaSrc)
-    {
-        AreaDest = U_FILE_MODE_USER2;
-    }
-    //长度
-    char LenthDest;
-    QString LenthSrc = lenthCombo->currentText();
-    LenthDest = LenthSrc.toInt();
-    //写命令
-    if(writeRadioBtn->isChecked())//写操作
-    {
-        QByteArray WriteBuff;
-        QString DestIDSrc1 = TargetIDLineEdt1->text();
-        QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
-        WriteBuff+=U_CMD_FILE_WRITE;//命令
-        WriteBuff+=DestIDDec1;//目标ID
-        WriteBuff+=OverTimeDest;//超时时间
-        WriteBuff+=(char)(U_FILE_RESERVER>>8);//保留
-        WriteBuff+=(char)U_FILE_RESERVER;//保留
-        WriteBuff+=AreaDest;//操作区
-        WriteBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
-        WriteBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
-        WriteBuff+=LenthDest;//长度
-        QString DataSrc = dataTedt->toPlainText();
-        QByteArray DataDes = QByteArray::fromHex(DataSrc.toLatin1());
-        WriteBuff.append(DataDes,(int)LenthDest);
-        qDebug() << WriteBuff.toHex();
-        config_Btn = WriteFileBtnPD;//按键按下
-        emit sendsignal(WriteBuff);
-    }
-    else if(readRadioBtn->isChecked())//读操作
-    {
-        QByteArray ReadBuff;
-        QString DestIDSrc1 = TargetIDLineEdt1->text();
-        QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
-
-        ReadBuff+=U_CMD_FILE_READ;//命令
-        ReadBuff+=DestIDDec1;//目标ID
-        ReadBuff+=OverTimeDest;//超时时间
-        ReadBuff+=(char)(U_FILE_RESERVER>>8);//保留
-        ReadBuff+=(char)U_FILE_RESERVER;//保留
-        ReadBuff+=AreaDest;//操作区
-        //偏移
-        QString OffsetSrc =offsetCombo->currentText();
-        if("最新记录" == OffsetSrc)
+        //超时时间
+        char OverTimeDest;
+        QString OverTimeSrc = OverTime->currentText();
+        if("无超时" == OverTimeSrc)
         {
-            ReadBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
-            ReadBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
+            OverTimeDest = 0x00;
         }
         else
         {
-            char OffsetDest = OffsetSrc.toInt();
-            ReadBuff+=(char)0x00;
-            ReadBuff+=OffsetDest;
+            OverTimeSrc.chop(1);//去掉单位s
+            OverTimeDest = OverTimeSrc.toInt();
         }
-        ReadBuff+=LenthDest;//长度
-        qDebug() << ReadBuff.toHex();
-        config_Btn = ReadFileBtnPD;//按键按下
-        emit sendsignal(ReadBuff);
+        //参数区
+        char AreaDest=0;
+        QString AreaSrc = modeCombo->currentText();
+        if("参数区" == AreaSrc)
+        {
+            AreaDest = U_FILE_MODE_PARA;
+        }
+        else if("保留区" == AreaSrc)
+        {
+            AreaDest = U_FILE_MODE_RESERVER;
+        }
+        else if("用户区1" == AreaSrc)
+        {
+            AreaDest = U_FILE_MODE_USER1;
+        }
+        else if("用户区2" == AreaSrc)
+        {
+            AreaDest = U_FILE_MODE_USER2;
+        }
+        //长度
+        char LenthDest;
+        QString LenthSrc = lenthCombo->currentText();
+        LenthDest = LenthSrc.toInt();
+        //写命令
+        if(writeRadioBtn->isChecked())//写操作
+        {
+            QByteArray WriteBuff;
+    //        QString DestIDSrc1 = TargetIDLineEdt1->text();
+            QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
+            WriteBuff+=U_CMD_FILE_WRITE;//命令
+            WriteBuff+=DestIDDec1;//目标ID
+            WriteBuff+=OverTimeDest;//超时时间
+            WriteBuff+=(char)(U_FILE_RESERVER>>8);//保留
+            WriteBuff+=(char)U_FILE_RESERVER;//保留
+            WriteBuff+=AreaDest;//操作区
+            WriteBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
+            WriteBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
+            WriteBuff+=LenthDest;//长度
+            QString DataSrc = dataTedt->toPlainText();
+            QByteArray DataDes = QByteArray::fromHex(DataSrc.toLatin1());
+            WriteBuff.append(DataDes,(int)LenthDest);
+            qDebug() << WriteBuff.toHex();
+            config_Btn = WriteFileBtnPD;//按键按下
+            emit sendsignal(WriteBuff);
+        }
+        else if(readRadioBtn->isChecked())//读操作
+        {
+            QByteArray ReadBuff;
+            QString DestIDSrc1 = TargetIDLineEdt1->text();
+            QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
+
+            ReadBuff+=U_CMD_FILE_READ;//命令
+            ReadBuff+=DestIDDec1;//目标ID
+            ReadBuff+=OverTimeDest;//超时时间
+            ReadBuff+=(char)(U_FILE_RESERVER>>8);//保留
+            ReadBuff+=(char)U_FILE_RESERVER;//保留
+            ReadBuff+=AreaDest;//操作区
+            //偏移
+            QString OffsetSrc =offsetCombo->currentText();
+            if("最新记录" == OffsetSrc)
+            {
+                ReadBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
+                ReadBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
+            }
+            else
+            {
+                char OffsetDest = OffsetSrc.toInt();
+                ReadBuff+=(char)0x00;
+                ReadBuff+=OffsetDest;
+            }
+            ReadBuff+=LenthDest;//长度
+            qDebug() << ReadBuff.toHex();
+            config_Btn = ReadFileBtnPD;//按键按下
+            emit sendsignal(ReadBuff);
+        }
     }
+
 
 }
 //qstring(unicode)->gbk
@@ -679,6 +703,35 @@ void ConfigPage::msgSend()
     qDebug() <<"消息命令内容"<< MsgBuff.toHex();
     emit sendsignal(MsgBuff);
 }
+/****************************************************
+串口通信 上位机->接收器
+整机测试命令F3
+信息内容
+0：0x01
+消息长度1字节
+消息内容
+******************************************************/
+void ConfigPage::DeviceTest()
+{
+    QString DestIDSrc = TargetIDLineEdt->text();
+    config_Btn = DeviceTestPD;//按键按下
+    if(DestIDSrc.length()<8)
+    {
+        QByteArray error;
+        emit sendsignal(error);
+    }
+    else
+    {
+        QByteArray DeviceTestBuf;
+        DeviceTestBuf[0] = (char)U_CMD_DEVICE_TEST;
+        QByteArray DestIDDec = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
+        DeviceTestBuf+=DestIDDec;
+        DeviceTestBuf+= (char)0x01;
+        qDebug() <<"整机测试"<< DeviceTestBuf.toHex();
+        emit sendsignal(DeviceTestBuf);
+    }
+}
+
 /****************************************************
 串口通信 上位机->接收器
 列出标签命令F4 列出读写器命令F5
@@ -889,6 +942,7 @@ void ConfigPage::AutoReportClose()
     qDebug() <<"关闭自动上报"<< AutoReportBuf.toHex();
     emit sendsignal(AutoReportBuf);
 }
+
 
 
 //消息最大长度

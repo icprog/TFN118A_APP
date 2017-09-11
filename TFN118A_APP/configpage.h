@@ -13,7 +13,8 @@ typedef enum
     ReadFileBtnPD,
     MsgBtnPD,
     SesrchTagPD,
-    AutoReportPD
+    AutoReportPD,
+    DeviceTestPD
 }Btn_Typedef;
 
 class ConfigPage : public QWidget
@@ -59,6 +60,7 @@ private:
     QPushButton *WRFileBtn;//文件操作按钮
     QByteArray U2GBK(QString unic);//unicode->gbk
     QByteArray QString2Unicode(QString src);//string->unicode
+    QPushButton *testBtn;//整机测试
     //扩展窗口-射频处理
     QPushButton *searchTagBtn;//查询标签
     QPushButton *searchReaderBtn;//查询读写器
@@ -88,6 +90,7 @@ public slots:
     void SearchReader();//查询读写器
     void AutoReportOpen();
     void AutoReportClose();
+    void DeviceTest();//整机测试
 };
 
 #endif // CONFIGPAGE_H

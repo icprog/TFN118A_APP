@@ -60,7 +60,7 @@ private:
         uint32_t report_cnt;//上报次数
     }Device_Info_Typedef;
     Device_Info_Typedef Device_Info;
-
+//    QString filePath;//帮助文件路径
 };
 
 #endif // DIALOG_H

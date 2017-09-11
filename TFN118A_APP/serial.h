@@ -19,10 +19,15 @@ public:
     void sendData(QByteArray data);
 private:
     QLabel *COMInf;
+    QTimer *timer;
+//    QStringList SerialPortList;
+    QStringList oldPortStringList;
 signals:
     void recieveData(QByteArray);
 public slots:
     bool COMBtnClick(void);
+    void UpdatePort();//更细端口号
+
 
 
 };

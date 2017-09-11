@@ -1,5 +1,5 @@
 #include "serial.h"
-
+//#include <QTimer>
 serial::serial(QWidget *parent) : QWidget(parent)
 {
     //串口
@@ -23,19 +23,25 @@ serial::serial(QWidget *parent) : QWidget(parent)
 
     //获取串口号
     m_serialPort = new QSerialPort();
+    oldPortStringList.clear();
     const auto infos = QSerialPortInfo::availablePorts();
     for (const QSerialPortInfo &info : infos)
-        serialPortComboBox->addItem(info.portName());
-    setLayout(COMLayout);
+        oldPortStringList << info.portName();
+    serialPortComboBox->addItems(oldPortStringList);
 
-    connect(COMBtn,&QPushButton::clicked,this,&serial::COMBtnClick);
-//    connect(this,&serial::recieveData,this,&serial::sendData);
+
+    setLayout(COMLayout);
+    timer = new QTimer;
+    connect(COMBtn,&QPushButton::clicked,this,&serial::COMBtnClick);//打开串口
+    connect(timer,&QTimer::timeout,this,&serial::UpdatePort);//更新端口号
+    timer->start(1000);
     qDebug() << "串口类创建成功";
 }
 
 serial::~serial()
 {
     delete m_serialPort;
+    delete timer;
 }
 
 
@@ -75,6 +81,34 @@ bool serial::COMBtnClick()
         }
     }
     return true;
+}
+//更新端口号
+void serial::UpdatePort()
+{
+//    QString tSerialPortStr;
+//    for(int i = 0; i < serialPortComboBox->count() ;i++)
+//        tSerialPortStr +=  serialPortComboBox->itemText(i);
+//    const auto infos = QSerialPortInfo::availablePorts();
+//    for (const QSerialPortInfo &info : infos)
+//    {
+//        if( false == tSerialPortStr.contains(info.portName()))
+//            serialPortComboBox->insertItem(1,info.portName());
+//    }
+
+    QStringList newPortStringList;
+    const auto infos = QSerialPortInfo::availablePorts();
+    for (const QSerialPortInfo &info : infos)
+    {
+        newPortStringList += info.portName();
+    }
+    //更新串口号
+    if(newPortStringList.size() != oldPortStringList.size())
+    {
+        oldPortStringList = newPortStringList;
+        serialPortComboBox->clear();
+        serialPortComboBox->addItems(oldPortStringList);
+    }
+
 }
 
 void serial::sendData(QByteArray data)

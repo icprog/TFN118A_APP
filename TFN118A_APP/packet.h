@@ -105,6 +105,7 @@ typedef enum
 }UMSG_State_Typedef;
 //获取读写器ID
 #define U_CMD_READER_ID                         0XF2    //读写器ID
+#define U_CMD_DEVICE_TEST                       0XF3    //整机测试
 //列出标签
 #define U_CMD_LIST_TAG                          0XF4    //列出标签
 #define U_CMD_LIST_READER                       0XF5    //列出读写器
@@ -116,7 +117,12 @@ typedef enum
 #define MAX_PKT_Msk    0xf0
 #define CRT_PKT_Msk    0x0f
 
-
+//报警低电状态
+//报警延时
+#define TAG_KEYALARM_Pos								1
+#define TAG_KEYALARM_Msk								0x02
+#define TAG_LOWPOWER_Pos								1
+#define TAG_LOWPOWER_Msk								0x01
 
 class packet
 {
