@@ -38,9 +38,9 @@ Dialog::Dialog(QWidget *parent)
     ReaderBtn->setMinimumWidth(60);
     ReaderBtn->setMaximumWidth(60);
     ReaderIDLineEdt = new QLineEdit;
-    ReaderIDLineEdt->setMaxLength(8);
-    ReaderIDLineEdt->setMinimumWidth(60);
-    ReaderIDLineEdt->setMaximumWidth(60);
+    ReaderIDLineEdt->setMaxLength(ReaderID_LEN*2);
+    ReaderIDLineEdt->setMinimumWidth(80);
+    ReaderIDLineEdt->setMaximumWidth(80);
     //顶部
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->addWidget(my_serial);
@@ -93,6 +93,7 @@ void Dialog::conectEventtinit()
     connect(helpButton,&QPushButton::clicked,this,&Dialog::OnHelp);//帮助
     connect(my_serial->m_serialPort,&QSerialPort::readyRead,this,&Dialog::ReadComData);//读取串口数据
     connect(ReaderBtn,&QPushButton::clicked,this,&Dialog::GetReaderID);
+    connect(m_configpage,&ConfigPage::sendMsgBox,this,&Dialog::ShowMsgBox);//显示错误信息
 }
 //切换界面
 void Dialog::changePage(QListWidgetItem *current, QListWidgetItem *previous)
@@ -155,7 +156,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
         u_cmd_state = ((uint16_t)(P_SRC[U_DATA_IDX]<<8)|(uint8_t)P_SRC[U_DATA_IDX+1]);
         switch(u_cmd)
         {
-            case U_CMD_FILE_WRITE://写文件
+            case U_CMD_WRITE_FILE://写文件
             {
                 if(u_cmd_state == FILE_SUCCESS)
                     RunStateLabel->setText("写操作执行成功");
@@ -165,11 +166,13 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     RunStateLabel->setText("写超出边界");
                 else if(u_cmd_state == FILE_WDATA_ERR)
                     RunStateLabel->setText("写数据错误");
+                else if(u_cmd_state == FILE_FULL_ERR)
+                    RunStateLabel->setText("记录满");
                 else if(u_cmd_state == FILE_TIMEOUT_ERR)
                     RunStateLabel->setText("写命令超时");
             }
             break;
-            case U_CMD_FILE_READ://读文件
+            case U_CMD_READ_FILE://读文件
             {
                 if(u_cmd_state == FILE_SUCCESS)
                 {
@@ -186,7 +189,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 else if(u_cmd_state == FILE_MODE_ERR)
                     RunStateLabel->setText("读操作区不存在");
                 else if(u_cmd_state == FILE_BODER_ERR)
-                    RunStateLabel->setText("读超出边界");
+                    RunStateLabel->setText("读超出边界(偏移或长度错误)");
                 else if(u_cmd_state == FILE_WDATA_ERR)
                     RunStateLabel->setText("读数据错误");
                 else if(u_cmd_state == FILE_WOFFSET_ERR)
@@ -195,34 +198,44 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     RunStateLabel->setText("读命令超时");
             }
             break;
-            case U_CMD_TIME_SET:
+            case U_CMD_ERASE_FILE://读文件
             {
-                if(u_cmd_state == U_TIME_SUCESS)
-                {
-                    RunStateLabel->setText("时间下发成功");
-                }
-                else if(u_cmd_state == U_TIME_ERR)
-                {
-                    RunStateLabel->setText("时间内容错误");
-                }
+                if(u_cmd_state == FILE_SUCCESS)
+                    RunStateLabel->setText("擦除成功");
+                else if(u_cmd_state == FILE_MODE_ERR)
+                    RunStateLabel->setText("写操作区不存在");
+                else if(u_cmd_state == FILE_BODER_ERR)
+                    RunStateLabel->setText("写超出边界");
+                else if(u_cmd_state == FILE_WDATA_ERR)
+                    RunStateLabel->setText("写数据错误");
+                else if(u_cmd_state == FILE_FULL_ERR)
+                    RunStateLabel->setText("记录满");
+                else if(u_cmd_state == FILE_TIMEOUT_ERR)
+                    RunStateLabel->setText("写命令超时");
             }
             break;
-
             case U_CMD_MSG_PUSH://下发消息
             {
                 char MsgSeq =P_SRC[U_DATA_IDX+2];
+                QString StrState;
                 if(u_cmd_state == U_MSG_SUCESS)
                 {
-                    QString StrState = "执行成功，最新消息序号:";
-                    StrState+=QString::number(MsgSeq);
-                    RunStateLabel->setText(StrState);
+                    StrState = "执行成功，最新消息序号:";
                 }
-                else if(u_cmd_state == U_MSG_ERR)
+                else if(u_cmd_state == U_MSG_LEN_ERR)
                 {
-                    QString StrState = "长度超出，最新消息序号:";
-                    StrState+=QString::number(MsgSeq);
-                    RunStateLabel->setText(StrState);
+                    StrState = "长度超出，最新消息序号:";
                 }
+                else if(u_cmd_state == U_MSG_DATA_ERR)
+                {
+                    StrState = "日历内容错误，最新消息序号::";
+                }
+                else if(u_cmd_state == U_MSG_SEQ_ERR)
+                {
+                    StrState = "消息编号错误，最新消息序号:";
+                }
+                StrState+=QString::number(MsgSeq);
+                RunStateLabel->setText(StrState);
             }
             break;
             case U_CMD_READER_ID://读写器ID
@@ -247,8 +260,8 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
                 P_DES.truncate(pkt_len);//移除CRC后面的数据
                 P_DES.remove(0,U_DATA_IDX);//找到读到的数据内容
-                Device_Info.PKT_Max_Num = (char)((P_DES[0]>>4)&0x0f);//最大编号
-                Device_Info.PKT_Crt_Num = (P_DES[0]&(char)(CRT_PKT_Msk));//当前包编号
+                Device_Info.PKT_Max_Num = P_DES[0];//最大编号
+                Device_Info.PKT_Crt_Num = P_DES[1];//当前包编号
                 if(0x00 == Device_Info.PKT_Crt_Num)
                 {
                     Device_Info.Device_idx = 0;//设备索引号清0
@@ -256,14 +269,19 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 }
                 if(Device_Info.PKT_Crt_Num <= Device_Info.PKT_Max_Num)
                 {
-                    Device_Info.Device_Num += P_DES[1];//设备数量
+                    Device_Info.Device_Num += P_DES[2];//设备数量
                 }
-                P_DES.remove(0,2);//标签内容
+                P_DES.remove(0,3);//标签内容
                 QString TagDataDes = QString::fromLatin1(P_DES.toHex());
+                if(Device_Info.Device_Num <1)
+                {
+                    RunStateLabel->setText("无设备");
+                    break;
+                }
                 for(;Device_Info.Device_idx<Device_Info.Device_Num;)
                 {
-                    Device_Info.ID = TagDataDes.left(8).toUpper();//id
-                    TagDataDes.remove(0,8);//删除ID*2
+                    Device_Info.ID = TagDataDes.left(TagID_STR_LEN).toUpper();//id
+                    TagDataDes.remove(0,TagID_STR_LEN);//删除ID*2
                     Device_Info.State = TagDataDes.left(2).toUpper();//状态
                     QByteArray StateSrc = QByteArray::fromHex(Device_Info.State.toLatin1());//状态
                     char StateDest = StateSrc[0];
@@ -286,7 +304,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     Device_Info.TYPE = TagDataDes.left(2);//传感类型
                     if(u_cmd == U_CMD_LIST_TAG)
                     {
-                        if(Device_Info.TYPE == "01")//校园腕带
+                        if(Device_Info.TYPE == "03")//校园腕带
                             Device_Info.TYPE = "校园腕带";
                     }
                     else if(u_cmd == U_CMD_LIST_READER)
@@ -296,19 +314,24 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     }
 
                     TagDataDes.remove(0,2);//删除TYPE
-                    Device_Info.DATA = TagDataDes.left(2).toUpper();//传感数据
-                    TagDataDes.remove(0,2);//删除data
-                    Device_Info.BASEID = TagDataDes.left(4).toUpper();//边界管理器
-                    TagDataDes.remove(0,4);//删除边界管理器ID
+                    TagDataDes.remove(0,2);//删除保留
+                    Device_Info.B_DOORID = TagDataDes.left(4).toUpper();//门口边界管理器
+                    TagDataDes.remove(0,4);//删除门口边界管理器ID
+                    Device_Info.B_NORMALID = TagDataDes.left(4).toUpper();//普通边界管理器
+                    TagDataDes.remove(0,4);//删除普通边界管理器ID
+                    Device_Info.DATA = TagDataDes.left(2).toUpper();//传感值
+                    TagDataDes.remove(0,4);//删除传感值
                     if(u_cmd == U_CMD_LIST_TAG)
                     {
+
                         m_configpage->device_model->setItem(Device_Info.Device_idx,0,new QStandardItem(Device_Info.TYPE));
                         m_configpage->device_model->setItem(Device_Info.Device_idx,1,new QStandardItem(Device_Info.ID));
                         m_configpage->device_model->setItem(Device_Info.Device_idx,2,new QStandardItem(Device_Info.State));
                         m_configpage->device_model->setItem(Device_Info.Device_idx,3,new QStandardItem(Device_Info.RSSI));
                         m_configpage->device_model->setItem(Device_Info.Device_idx,4,new QStandardItem(Device_Info.DATA));
-                        m_configpage->device_model->setItem(Device_Info.Device_idx,5,new QStandardItem(Device_Info.BASEID));
-                        m_configpage->device_model->setItem(Device_Info.Device_idx,6,new QStandardItem(Device_Info.VER));
+                        m_configpage->device_model->setItem(Device_Info.Device_idx,5,new QStandardItem(Device_Info.B_DOORID));
+                        m_configpage->device_model->setItem(Device_Info.Device_idx,6,new QStandardItem(Device_Info.B_NORMALID));
+                        m_configpage->device_model->setItem(Device_Info.Device_idx,7,new QStandardItem(Device_Info.VER));
                     }
                     else if(u_cmd == U_CMD_LIST_READER)
                     {
@@ -331,8 +354,8 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
                 P_DES.truncate(pkt_len);//移除CRC后面的数据
                 P_DES.remove(0,U_DATA_IDX);//找到读到的数据内容
-                Device_Info.PKT_Max_Num = (char)((P_DES[0]>>4)&0x0f);//最大编号
-                Device_Info.PKT_Crt_Num = (P_DES[0]&(char)(CRT_PKT_Msk));//当前包编号
+                Device_Info.PKT_Max_Num = P_DES[0];//最大编号
+                Device_Info.PKT_Crt_Num = P_DES[1];//当前包编号
                 if(0x00 == Device_Info.PKT_Crt_Num)
                 {
                     Device_Info.Device_idx = 0;//设备索引号清0
@@ -344,7 +367,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 }
                 if(Device_Info.PKT_Crt_Num <= Device_Info.PKT_Max_Num)
                 {
-                    Device_Info.Device_Num += P_DES[1];//设备数量
+                    Device_Info.Device_Num += P_DES[2];//设备数量
                 }
                 if(Device_Info.Device_Num == 0)
                 {
@@ -357,12 +380,12 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     m_configpage->device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
                     m_configpage->device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
                 }
-                P_DES.remove(0,2);//标签内容
+                P_DES.remove(0,3);//标签内容
                 QString TagDataDes = QString::fromLatin1(P_DES.toHex());
                 for(;Device_Info.Device_idx<Device_Info.Device_Num;)
                 {
-                    Device_Info.ID = TagDataDes.left(8).toUpper();//id
-                    TagDataDes.remove(0,8);//删除ID*2
+                    Device_Info.ID = TagDataDes.left(TagID_STR_LEN).toUpper();//id
+                    TagDataDes.remove(0,TagID_STR_LEN);//删除ID*2
                     Device_Info.State = TagDataDes.left(2).toUpper();//状态
                     QByteArray StateSrc = QByteArray::fromHex(Device_Info.State.toLatin1());//状态
                     char StateDest = StateSrc[0];
@@ -383,21 +406,26 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     Device_Info.RSSI+="dBm";
                     TagDataDes.remove(0,2);//删除RSSI
                     Device_Info.TYPE = TagDataDes.left(2);//传感类型
-                    if(Device_Info.TYPE == "01")//校园腕带
-                        Device_Info.TYPE = "校园腕带";
-                    TagDataDes.remove(0,2);//删除TYPE
-                    Device_Info.DATA = TagDataDes.left(2).toUpper();//传感数据
-                    TagDataDes.remove(0,2);//删除data
-                    Device_Info.BASEID = TagDataDes.left(4).toUpper();//边界管理器
-                    TagDataDes.remove(0,4);//删除边界管理器ID
 
+                    if(Device_Info.TYPE == "03")//校园腕带
+                        Device_Info.TYPE = "校园腕带";
+
+                    TagDataDes.remove(0,2);//删除TYPE
+                    TagDataDes.remove(0,2);//删除保留
+                    Device_Info.B_DOORID = TagDataDes.left(4).toUpper();//门口边界管理器
+                    TagDataDes.remove(0,4);//删除门口边界管理器ID
+                    Device_Info.B_NORMALID = TagDataDes.left(4).toUpper();//普通边界管理器
+                    TagDataDes.remove(0,4);//删除普通边界管理器ID
+                    Device_Info.DATA = TagDataDes.left(2).toUpper();//传感值
+                    TagDataDes.remove(0,4);//删除传感值
                     m_configpage->device_model->setItem(Device_Info.Device_idx,0,new QStandardItem(Device_Info.TYPE));
                     m_configpage->device_model->setItem(Device_Info.Device_idx,1,new QStandardItem(Device_Info.ID));
                     m_configpage->device_model->setItem(Device_Info.Device_idx,2,new QStandardItem(Device_Info.State));
                     m_configpage->device_model->setItem(Device_Info.Device_idx,3,new QStandardItem(Device_Info.RSSI));
                     m_configpage->device_model->setItem(Device_Info.Device_idx,4,new QStandardItem(Device_Info.DATA));
-                    m_configpage->device_model->setItem(Device_Info.Device_idx,5,new QStandardItem(Device_Info.BASEID));
-                    m_configpage->device_model->setItem(Device_Info.Device_idx,6,new QStandardItem(Device_Info.VER));
+                    m_configpage->device_model->setItem(Device_Info.Device_idx,5,new QStandardItem(Device_Info.B_DOORID));
+                    m_configpage->device_model->setItem(Device_Info.Device_idx,6,new QStandardItem(Device_Info.B_NORMALID));
+                    m_configpage->device_model->setItem(Device_Info.Device_idx,7,new QStandardItem(Device_Info.VER));
                     Device_Info.Device_idx++;
 
                 }
@@ -462,7 +490,7 @@ void Dialog::GetReaderID()
     ReaderIDBuff[U_ID_IDX+1] = (char)0xff;//读写器ID
     ReaderIDBuff[U_ID_IDX+2] = (char)0xff;//读写器ID
     ReaderIDBuff[U_ID_IDX+3] = (char)0xff;//读写器ID
-    ReaderIDBuff[U_TXGPS_IDX] = U_TXGPS_Value;//定位信息
+    ReaderIDBuff[U_ID_IDX+4] = (char)0xff;//读写器ID
     ReaderIDBuff[U_SEQ_IDX] = U_SEQ_Value;//流水号
     ReaderIDBuff[U_CMD_IDX] = U_CMD_READER_ID;//命令
     char U_LengthSrc = ReaderIDBuff.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
@@ -481,6 +509,14 @@ void Dialog::GetReaderID()
     my_serial->sendData(ReaderIDBuff);
     qDebug() <<"读取ID:"<< ReaderIDBuff.toHex();
 }
+
+void Dialog::ShowMsgBox(QString msg)
+{
+    QMessageBox msgBox;
+    msgBox.setText(msg);
+    msgBox.exec();
+    return;
+}
 /****************************************************
 串口通信 上位机->接收器
 描述	帧头	长度	协议版本	读写器ID	定位信息	协议流水号
@@ -495,20 +531,16 @@ void Dialog::SendData(QByteArray data)
     qDebug()<<"主界面";
     if(0 == my_serial->m_serialPort->isOpen())
     {
-        QMessageBox msgBox;
-        msgBox.setText("串口未打开");
-        msgBox.exec();
+        this->ShowMsgBox("串口未打开");
         return;
     }
     QByteArray send_data;
     uint16_t CRC;
     //获取读写器ID,并且转成QByteArray
     QString ReaderIDSrc = ReaderIDLineEdt->text();
-    if(ReaderIDSrc.length()<8)
+    if(ReaderIDSrc.length()<(ReaderID_LEN*2))
     {
-        QMessageBox msgBox;
-        msgBox.setText("请点击读写器ID，获取读写器ID");
-        msgBox.exec();
+        this->ShowMsgBox("请点击读写器ID，获取读写器ID");
         return;
     }
     QByteArray ReaderIDDec = QByteArray::fromHex(ReaderIDSrc.toLatin1());
@@ -519,108 +551,28 @@ void Dialog::SendData(QByteArray data)
     send_data[U_ID_IDX+1] = ReaderIDDec[1];//读写器ID
     send_data[U_ID_IDX+2] = ReaderIDDec[2];//读写器ID
     send_data[U_ID_IDX+3] = ReaderIDDec[3];//读写器ID
-    send_data[U_TXGPS_IDX] = U_TXGPS_Value;//定位信息
+    send_data[U_ID_IDX+4] = ReaderIDDec[4];//定位信息
     send_data[U_SEQ_IDX] = U_SEQ_Value;//流水号
     if(settimeBtnPD ==m_configpage->config_Btn)//时间设置按钮按下
     {
-        send_data[U_LEN_IDX] = (char)(U_TIME_SET_LEN>>8);//长度
-        send_data[U_LEN_IDX+1] = (char)U_TIME_SET_LEN;//长度
-        send_data[U_CMD_IDX] = U_CMD_TIME_SET;//命令
-        send_data+=data;
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        char *crcsrc = send_data.data();
-        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],(U_TIME_SET_LEN+U_LENTH_LEN));
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        char *crcsrc = send_data.data();//转化成CHAR* 类型
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
         send_data+=(char)(CRC);
         my_serial->sendData(send_data);
         qDebug() << "时间设置";
         qDebug() << send_data.toHex();
-
     }
-    else if(setparaBtnPD ==m_configpage->config_Btn)//参数设置按钮按下
-    {
-        if(data.length()>0)
-        {
-            send_data[U_LEN_IDX] = (char)(U_PARA_SET_LEN>>8);//长度
-            send_data[U_LEN_IDX+1] = (char)U_PARA_SET_LEN;//长度
-            send_data[U_CMD_IDX] = U_CMD_PARA_SET;//命令
-            send_data+=data;
-            //CRC
-            char *crcsrc = send_data.data();
-            CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],(U_PARA_SET_LEN+U_LENTH_LEN));
-            send_data+=(char)(CRC>>8);
-            send_data+=(char)(CRC);
-            my_serial->sendData(send_data);
-            qDebug() << "参数设置";
-            qDebug() << send_data.toHex();
-        }
-        else
-        {
-            QMessageBox msgBox;
-            msgBox.setText("腕带参数框填写正确的目标ID");
-            msgBox.exec();
-            return;
-        }
-    }
-    //写文件
-    else if(WriteFileBtnPD == m_configpage->config_Btn)
-    {
-        if(data.length()>0)
-        {
-            send_data+=data;//命令字+信息内容
-            char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
-            send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
-            send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
-            //CRC
-            int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
-            char *crcsrc = send_data.data();
-            CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
-            send_data+=(char)(CRC>>8);
-            send_data+=(char)(CRC);
-            my_serial->sendData(send_data);
-            qDebug() <<"写文件:"<< send_data.toHex();
-        }
-        else
-        {
-            QMessageBox msgBox;
-            msgBox.setText("文件操作框填写正确的目标ID");
-            msgBox.exec();
-            return;
-        }
-    }
-    //读文件
-    else if(ReadFileBtnPD == m_configpage->config_Btn)
-    {
-        if(data.length()>0)
-        {
-            m_configpage->ClearReadFileData();
-            send_data+=data;//命令字+信息内容
-            char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
-            send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
-            send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
-            //CRC
-            int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
-            char *crcsrc = send_data.data();//转化成CHAR* 类型
-            CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
-            send_data+=(char)(CRC>>8);
-            send_data+=(char)(CRC);
-            my_serial->sendData(send_data);
-            qDebug() <<"读文件:"<< send_data.toHex();
-        }
-        else
-        {
-            QMessageBox msgBox;
-            msgBox.setText("文件操作框填写正确的目标ID");
-            msgBox.exec();
-            return;
-        }
-
-    }
-    //消息处理
-    else if(MsgBtnPD == m_configpage->config_Btn)
+    else if(MsgBtnPD == m_configpage->config_Btn)//消息处理
     {
         send_data+=data;//命令字+信息内容
-        char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
@@ -632,10 +584,80 @@ void Dialog::SendData(QByteArray data)
         my_serial->sendData(send_data);
         qDebug() <<"消息内容:"<< send_data.toHex();
     }
-    else if(SesrchTagPD == m_configpage->config_Btn )
+    else if(setparaBtnPD ==m_configpage->config_Btn)//参数设置按钮按下
+    {
+
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
+        //CRC
+        //CRC
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        char *crcsrc = send_data.data();
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
+        send_data+=(char)(CRC>>8);
+        send_data+=(char)(CRC);
+        my_serial->sendData(send_data);
+        qDebug() << "参数设置";
+        qDebug() << send_data.toHex();
+
+
+    }   
+    else if(WriteFileBtnPD == m_configpage->config_Btn)//写文件
+    {
+
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
+        //CRC
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        char *crcsrc = send_data.data();
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
+        send_data+=(char)(CRC>>8);
+        send_data+=(char)(CRC);
+        my_serial->sendData(send_data);
+        qDebug() <<"写文件:"<< send_data.toHex();
+
+
+    }
+    else if(ReadFileBtnPD == m_configpage->config_Btn)//读文件
+    {
+        m_configpage->ClearReadFileData();
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
+        //CRC
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        char *crcsrc = send_data.data();//转化成CHAR* 类型
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
+        send_data+=(char)(CRC>>8);
+        send_data+=(char)(CRC);
+        my_serial->sendData(send_data);
+        qDebug() <<"读文件:"<< send_data.toHex();
+    }
+    else if(EraseFileBtnPD == m_configpage->config_Btn)//擦除
+    {
+        m_configpage->ClearReadFileData();
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
+        //CRC
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        char *crcsrc = send_data.data();//转化成CHAR* 类型
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
+        send_data+=(char)(CRC>>8);
+        send_data+=(char)(CRC);
+        my_serial->sendData(send_data);
+        qDebug() <<"读文件:"<< send_data.toHex();
+    }
+    else if(SesrchTagPD == m_configpage->config_Btn )//查询标签
     {
         send_data+=data;//命令字+信息内容
-        char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
@@ -647,10 +669,10 @@ void Dialog::SendData(QByteArray data)
         my_serial->sendData(send_data);
         qDebug() <<"查询标签/读写器:"<< send_data.toHex();
     }
-    else if(AutoReportPD == m_configpage->config_Btn)
+    else if(AutoReportPD == m_configpage->config_Btn)//自动上报
     {
         send_data+=data;//命令字+信息内容
-        char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
@@ -663,12 +685,11 @@ void Dialog::SendData(QByteArray data)
         qDebug() <<"自动上报:"<< send_data.toHex();
         Device_Info.report_cnt = 0;//上报次数清0
     }
-    else if(DeviceTestPD == m_configpage->config_Btn)
+    else if(DeviceTestPD == m_configpage->config_Btn)//设备测试
     {
-        if(data.length()>0)
-        {
+
             send_data+=data;//命令字+信息内容
-            char U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+            uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
             send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
             send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
             //CRC
@@ -679,14 +700,6 @@ void Dialog::SendData(QByteArray data)
             send_data+=(char)(CRC);
             my_serial->sendData(send_data);
             qDebug() <<"整机测试:"<< send_data.toHex();
-        }
-        else
-        {
-            QMessageBox msgBox;
-            msgBox.setText("腕带参数框填写正确的目标ID");
-            msgBox.exec();
-            return;
-        }
     }
     RunStateLabel->clear();
     ReceiveData.clear();

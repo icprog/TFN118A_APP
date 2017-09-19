@@ -3,7 +3,7 @@
 
 #include <QWidget>
 #include <QtWidgets>
-
+#include "packet.h"
 typedef enum
 {
     idleBtn=0,
@@ -11,6 +11,7 @@ typedef enum
     setparaBtnPD,
     WriteFileBtnPD,
     ReadFileBtnPD,
+    EraseFileBtnPD,
     MsgBtnPD,
     SesrchTagPD,
     AutoReportPD,
@@ -39,16 +40,26 @@ private:
     QPushButton *setParaBtn;//参数设置按钮
     QComboBox *pwrCombo;//参数-发射功率
     QComboBox *wModeCombo;//参数-工作模式
+    QComboBox *P_SendPeriodCombo;//参数-发射周期
     QComboBox *alarmCombo;//参数-报警时间
+    QComboBox *P_EventClearMothodCombo;//参数-事件清除方式
+    QComboBox *P_BaseRssiThrCombo;//参数-低频激活信号强度门限
+    QLineEdit *P_SensorParaLineEdt;//参数-传感参数
     QLineEdit *TargetIDLineEdt;//目标ID
-    QDateTimeEdit *dateEdit;
 
+    QDateTimeEdit *dateEdit;
     //消息
     QTextEdit *messageTedt;//消息内容
     QPushButton *messageBtn;//消息下发按钮
+    QRadioButton *msgTypeCalRadioBtn;//日历消息
+    QRadioButton *msgTypeNewsRadioBtn;//文字消息
+    QRadioButton *msgAllRadioBtn;//群发
+    QRadioButton *msgDestRadioBtn;//指定发送
+    MSG_Store_Typedef MSG_Store;//消息序号
     //文件操作
     QRadioButton *readRadioBtn;//读操作
     QRadioButton *writeRadioBtn;//写操作
+    QRadioButton *eraseRadioBtn;//擦除
     QLineEdit *TargetIDLineEdt1;//目标ID1
     QCheckBox *readCheckBox = new QCheckBox("读操作");
     QCheckBox *writeCheckBox = new QCheckBox("写操作");
@@ -79,6 +90,7 @@ private:
     QCheckBox *lpfilterAutoCheckBox;//低电过滤
 signals:
     void sendsignal(QByteArray);
+    void sendMsgBox(QString);
 public slots:
     void updateTime();
     void setTimebuf();//更新时间BUFF

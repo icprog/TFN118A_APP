@@ -1,214 +1,298 @@
 #include "configpage.h"
-#include "packet.h"
 
+#define MaxWidth   190
 ConfigPage::ConfigPage(QWidget *parent) : QWidget(parent)
 {
      //时间
-     QGroupBox *timeGroup = new QGroupBox("时间");
-     timeGroup->setMaximumHeight(100);
-     timeGroup->setMaximumWidth(180);
-     getTimeBtn = new QPushButton("获取时间");
-     setTimeBtn = new QPushButton("时间设置");
+//     QGroupBox *timeGroup = new QGroupBox("时间");
+//     timeGroup->setMaximumHeight(100);
+//     timeGroup->setMaximumWidth(MaxWidth);
+//     getTimeBtn = new QPushButton("获取时间");
+//     setTimeBtn = new QPushButton("时间设置");
 
-     QDialogButtonBox *dlgBtnBox = new QDialogButtonBox(Qt::Horizontal);
-     dlgBtnBox->addButton(getTimeBtn, QDialogButtonBox::ActionRole);
-     dlgBtnBox->addButton(setTimeBtn, QDialogButtonBox::ActionRole);
-//     QLabel *timeLabel = new QLabel("时间:");
-     dateEdit = new QDateTimeEdit(QDateTime::currentDateTime());
-     dateEdit->setDisplayFormat("yyyy/MM/dd  HH:mm:ss");
+//    QDialogButtonBox *dlgBtnBox = new QDialogButtonBox(Qt::Horizontal);
+//    dlgBtnBox->addButton(getTimeBtn, QDialogButtonBox::ActionRole);
+//    dlgBtnBox->addButton(setTimeBtn, QDialogButtonBox::ActionRole);
+//    dateEdit = new QDateTimeEdit(QDateTime::currentDateTime());
+//    dateEdit->setDisplayFormat("yyyy/MM/dd  HH:mm:ss");
 
 
-     QGridLayout *timeLayout = new QGridLayout;
-     timeLayout->addWidget(dlgBtnBox, 0, 0,1,1);
-     timeLayout->addWidget(setTimeBtn, 0, 1,1,1);
-     timeLayout->addWidget(dateEdit, 1, 0,1,2);
-     timeGroup->setLayout(timeLayout);
+//    QGridLayout *timeLayout = new QGridLayout;
+//    timeLayout->addWidget(getTimeBtn,0,0,1,1);
+//    timeLayout->addWidget(setTimeBtn,0,1,1,1);
+////     timeLayout->addWidget(dlgBtnBox, 0, 0,1,2);
+//    timeLayout->addWidget(dateEdit, 1,0,1,2);
+//    timeGroup->setLayout(timeLayout);
 
      //参数
-     QGroupBox *paraGroup = new QGroupBox("腕带参数");
-     paraGroup->setMaximumHeight(240);
-     paraGroup->setMaximumWidth(180);
-     QLabel *TargetIDLabel = new QLabel("目标ID:");
-     TargetIDLineEdt = new QLineEdit;
-     TargetIDLineEdt->setMaxLength(8);
-     //发射功率
-     QLabel *pwrLabel = new QLabel("发射功率:");
-     pwrCombo = new QComboBox;
+    QGroupBox *paraGroup = new QGroupBox("腕带参数");
+    paraGroup->setMaximumHeight(280);
+    paraGroup->setMaximumWidth(MaxWidth);
+    QLabel *TargetIDLabel = new QLabel("目标ID:");
+    TargetIDLineEdt = new QLineEdit;
+    TargetIDLineEdt->setMaxLength(TagID_LEN*2);
 
-     pwrCombo->addItem(tr("-30dBm"));
-     pwrCombo->addItem(tr("-20dBm"));
-     pwrCombo->addItem(tr("-16dBm"));
-     pwrCombo->addItem(tr("-12dBm"));
-     pwrCombo->addItem(tr("-8dBm"));
-     pwrCombo->addItem(tr("-4dBm"));
-     pwrCombo->addItem(tr("0dBm"));
-     pwrCombo->addItem(tr("4dBm"));
-     pwrCombo->setCurrentIndex(6);
+
 //     QLabel *pwrUnitLabel = new QLabel("dBm");
 
-     //工作模式
-     QLabel *wModeLabel = new QLabel("工作模式:");
-     wModeCombo = new QComboBox;
-     wModeCombo->addItem("活动模式");
-     wModeCombo->addItem("保存模式");
-//     QLabel *spaceLabel = new QLabel;
+    //工作模式
+    QLabel *wModeLabel = new QLabel("工作模式:");
+    wModeCombo = new QComboBox;
+    wModeCombo->addItem("单激活发射");
+    wModeCombo->addItem("自主发射");
+    wModeCombo->addItem("自适应单激活发射");
+    wModeCombo->addItem("自适应自主发射");
+    wModeCombo->addItem("保存模式");
+    wModeCombo->setCurrentIndex(1);
+    //自动上报发射周期
+    QLabel *SendPeriodLabel = new QLabel("发射周期:");
+    P_SendPeriodCombo = new QComboBox;
+    P_SendPeriodCombo->addItem(tr("250ms"));
+    P_SendPeriodCombo->addItem(tr("500ms"));
+    P_SendPeriodCombo->addItem(tr("1s"));
+    P_SendPeriodCombo->addItem(tr("2s"));
+    P_SendPeriodCombo->addItem(tr("4s"));
+    P_SendPeriodCombo->addItem(tr("8s"));
+    P_SendPeriodCombo->addItem(tr("16s"));
+    P_SendPeriodCombo->addItem(tr("32s"));
+    P_SendPeriodCombo->setCurrentIndex(2);
 
-     //报警时间
-     QLabel *alarmLabel = new QLabel("报警时间:");
-     alarmCombo = new QComboBox;
-     alarmCombo->addItem(tr("1s"));
-     alarmCombo->addItem(tr("2s"));
-     alarmCombo->addItem(tr("3s"));
-     alarmCombo->addItem(tr("4s"));
+    //发射功率
+    QLabel *pwrLabel = new QLabel("发射功率:");
+    pwrCombo = new QComboBox;
 
-     alarmCombo->addItem(tr("5s"));
-     alarmCombo->addItem(tr("6s"));
-     alarmCombo->setCurrentIndex(3);
+    pwrCombo->addItem(tr("-30dBm"));
+    pwrCombo->addItem(tr("-20dBm"));
+    pwrCombo->addItem(tr("-16dBm"));
+    pwrCombo->addItem(tr("-12dBm"));
+    pwrCombo->addItem(tr("-8dBm"));
+    pwrCombo->addItem(tr("-4dBm"));
+    pwrCombo->addItem(tr("0dBm"));
+    pwrCombo->addItem(tr("4dBm"));
+    pwrCombo->setCurrentIndex(6);
+    QLabel *EventClearMothodLabel = new QLabel("事件清除:");
+    P_EventClearMothodCombo = new QComboBox;
+    P_EventClearMothodCombo->addItem("标签自动撤销");
+    P_EventClearMothodCombo->addItem("读写器清除");
+    P_EventClearMothodCombo->setCurrentIndex(1);
+    //低频激励信号强度门限
+    QLabel *BaseRssiThrLabel = new QLabel("低频过滤:");
+    P_BaseRssiThrCombo = new QComboBox;
+    QStringList BRTList;
+    for(uint8_t i = 0; i<= 32 ;i++)
+    {
+        QString BRTStr = QString::number(i);
+        BRTStr += "dbm";
+        BRTList << BRTStr;
+    }
+    P_BaseRssiThrCombo->addItems(BRTList);
+    P_BaseRssiThrCombo->setCurrentIndex(32);
+    //传感器参数，自己填
+    QLabel *SensorDataLabel = new QLabel("传感参数:");
+    P_SensorParaLineEdt = new QLineEdit;
+    P_SensorParaLineEdt->setAlignment(Qt::AlignRight);
+    P_SensorParaLineEdt->setText("04");
+    //报警时间
+//     QLabel *alarmLabel = new QLabel("报警时间:");
+    alarmCombo = new QComboBox;
+    alarmCombo->addItem(tr("1s"));
+    alarmCombo->addItem(tr("2s"));
+    alarmCombo->addItem(tr("3s"));
+    alarmCombo->addItem(tr("4s"));
+
+    alarmCombo->addItem(tr("5s"));
+    alarmCombo->addItem(tr("6s"));
+    alarmCombo->setCurrentIndex(3);
 
 
 //     QLabel *alarmUnitLabel = new QLabel("s");
-     //设置按钮
-     setParaBtn = new QPushButton("参数设置");
-     //layout
-     QGridLayout *paraLayout = new QGridLayout;
-     paraLayout->addWidget(TargetIDLabel, 0,0);
-     paraLayout->addWidget(TargetIDLineEdt, 0,1);
-     paraLayout->addWidget(pwrLabel, 1,0);
-     paraLayout->addWidget(pwrCombo, 1,1);
-//     paraLayout->addWidget(pwrUnitLabel,0,3);
+    //设置按钮
+    setParaBtn = new QPushButton("参数设置");
+    //layout
+    QGridLayout *paraLayout = new QGridLayout;
+    paraLayout->addWidget(TargetIDLabel, 0,0);
+    paraLayout->addWidget(TargetIDLineEdt, 0,1);
+    paraLayout->addWidget(wModeLabel, 1, 0);
+    paraLayout->addWidget(wModeCombo, 1,1);
+    paraLayout->addWidget(SendPeriodLabel, 2, 0);
+    paraLayout->addWidget(P_SendPeriodCombo, 2,1);
+    paraLayout->addWidget(pwrLabel, 3,0);
+    paraLayout->addWidget(pwrCombo, 3,1);
+    paraLayout->addWidget(EventClearMothodLabel, 4,0);
+    paraLayout->addWidget(P_EventClearMothodCombo, 4,1);
+    paraLayout->addWidget(BaseRssiThrLabel, 5,0);
+    paraLayout->addWidget(P_BaseRssiThrCombo, 5,1);
+    paraLayout->addWidget(SensorDataLabel, 6,0);
+    paraLayout->addWidget(P_SensorParaLineEdt, 6,1);
+    paraLayout->addWidget(setParaBtn,7,0,1,2);
+//     paraLayout->setHorizontalSpacing(10);
+    paraGroup->setLayout(paraLayout);
 
-     paraLayout->addWidget(wModeLabel, 2, 0);
-     paraLayout->addWidget(wModeCombo, 2,1);
-//     paraLayout->addWidget(spaceLabel,1,3);
+    //消息
+    QGroupBox *messageGroup = new QGroupBox("消息");
+    messageGroup->setMaximumHeight(300);
+    messageGroup->setMaximumWidth(MaxWidth);
+    QLabel *msgTypeLabel = new QLabel("类别:");
+    QButtonGroup *msgTypeBtnGroup = new QButtonGroup;
+    msgTypeCalRadioBtn = new QRadioButton("时间");
+    msgTypeNewsRadioBtn = new QRadioButton("通知");
+    msgTypeCalRadioBtn->setChecked(1);
+    msgTypeBtnGroup->addButton(msgTypeCalRadioBtn,0);
+    msgTypeBtnGroup->addButton(msgTypeNewsRadioBtn,1);
+    msgTypeBtnGroup->setExclusive(true);//按钮互斥
 
-     paraLayout->addWidget(alarmLabel, 3, 0);
-     paraLayout->addWidget(alarmCombo, 3, 1);
-//     paraLayout->addWidget(alarmUnitLabel, 2, 3);
+    QLabel *msgDestLabel = new QLabel("方式:");
+    QButtonGroup *msgBtnGroup = new QButtonGroup;
+    msgAllRadioBtn = new QRadioButton("群发");
+    msgDestRadioBtn = new QRadioButton("指定发送");
+    msgAllRadioBtn->setChecked(1);//群发
+    msgBtnGroup->addButton(msgAllRadioBtn,0);
+    msgBtnGroup->addButton(msgDestRadioBtn,1);
+    msgBtnGroup->setExclusive(true);//按钮互斥
 
-     paraLayout->addWidget(setParaBtn,4,0,1,2);
-     paraGroup->setLayout(paraLayout);
+    QGridLayout *msgtopLayout = new QGridLayout;
+    msgtopLayout->addWidget(msgTypeLabel,0,0,1,1);//消息类别
+    msgtopLayout->addWidget(msgTypeCalRadioBtn,0,1,1,1);//时间
+    msgtopLayout->addWidget(msgTypeNewsRadioBtn,0,2,1,1);//通知
+    msgtopLayout->addWidget(msgDestLabel,1,0,1,1);//消息方式
+    msgtopLayout->addWidget(msgAllRadioBtn,1,1,1,1);//群发
+    msgtopLayout->addWidget(msgDestRadioBtn,1,2,1,1);//指定发送
+    msgtopLayout->setSpacing(5);
+    messageTedt = new QTextEdit;
+    QTextCodec::setCodecForLocale(QTextCodec::codecForName("GB18030"));
+    messageTedt->setText("小朋友，你们好！");
+    messageTedt->setMaximumHeight(50);
+    messageTedt->setMaximumWidth(MaxWidth);
+    QGroupBox *msgGroup = new QGroupBox("时间");
+    msgGroup->setMaximumHeight(100);
+    msgGroup->setMaximumWidth(MaxWidth);
+    getTimeBtn = new QPushButton("获取时间");
+    setTimeBtn = new QPushButton("时间设置");
+    messageBtn = new QPushButton("通知");
+    QDialogButtonBox *dlgBtnBox = new QDialogButtonBox(Qt::Horizontal);
+    dlgBtnBox->addButton(getTimeBtn, QDialogButtonBox::ActionRole);
+    dlgBtnBox->addButton(setTimeBtn, QDialogButtonBox::ActionRole);
+    dlgBtnBox->addButton(messageBtn,QDialogButtonBox::ActionRole);
+    dateEdit = new QDateTimeEdit(QDateTime::currentDateTime());
+    dateEdit->setDisplayFormat("yyyy/MM/dd  HH:mm:ss");
 
-     //消息
-     QGroupBox *messageGroup = new QGroupBox("消息");
-     messageGroup->setMaximumHeight(150);
-     messageGroup->setMaximumWidth(180);
-     messageTedt = new QTextEdit;
-     QTextCodec::setCodecForLocale(QTextCodec::codecForName("GB18030"));
-     messageTedt->setText("小朋友，你们好！");
-     messageTedt->setMaximumHeight(50);
-     messageTedt->setMaximumWidth(160);
-     messageBtn = new QPushButton("发送消息");
-     QGridLayout *messageLayout = new QGridLayout;
-     messageLayout->addWidget(messageTedt,0,0,1,2);
-     messageLayout->addWidget(messageBtn,1,0,1,2);
-     messageGroup->setLayout(messageLayout);
-     //文件操作
-     QGroupBox *fileGroup = new QGroupBox("文件操作");
-     fileGroup->setMaximumHeight(280);
-     fileGroup->setMaximumWidth(180);
-     //QButtonGroup无布局管理，需要layout布局管理
-     QButtonGroup *WRBtnGroup = new QButtonGroup;
-     readRadioBtn = new QRadioButton("读操作");
-     writeRadioBtn = new QRadioButton("写操作");
-     WRBtnGroup->addButton(readRadioBtn,0);
-     WRBtnGroup->addButton(writeRadioBtn,1);
-     WRBtnGroup->setExclusive(true);//按钮互斥
+    QGridLayout *messageLayout = new QGridLayout;
+    messageLayout->addLayout(msgtopLayout,0,0,2,3);
+    messageLayout->addWidget(dateEdit,2,0,1,3);//时间窗口
+    messageLayout->addWidget(messageTedt,3,0,1,3);
+    messageLayout->addWidget(getTimeBtn,4,0,1,1);
+    messageLayout->addWidget(setTimeBtn,4,1,1,1);
+    messageLayout->addWidget(messageBtn,4,2,1,1);
+    messageGroup->setLayout(messageLayout);
+    //文件操作
+    QGroupBox *fileGroup = new QGroupBox("文件操作");
+    fileGroup->setMaximumHeight(300);
+    fileGroup->setMaximumWidth(MaxWidth);
+    //QButtonGroup无布局管理，需要layout布局管理
+    QButtonGroup *WRBtnGroup = new QButtonGroup;
+    readRadioBtn = new QRadioButton("读操作");
+    writeRadioBtn = new QRadioButton("写操作");
+    eraseRadioBtn = new QRadioButton("擦除");
+    WRBtnGroup->addButton(readRadioBtn,0);
+    WRBtnGroup->addButton(writeRadioBtn,1);
+    WRBtnGroup->addButton(eraseRadioBtn,2);
+    WRBtnGroup->setExclusive(true);//按钮互斥
+    readRadioBtn->setChecked(1);
+    QLabel* TargetIDLabel1 = new QLabel("目标ID:");
 
-     QLabel* TargetIDLabel1 = new QLabel("目标ID:");
+    TargetIDLineEdt1 = new QLineEdit;
+    TargetIDLineEdt1->setMaxLength(TagID_LEN*2);
 
-     TargetIDLineEdt1 = new QLineEdit;
-     TargetIDLineEdt1->setMaxLength(8);
+    QLabel *modeLabel = new QLabel("模式:");
 
-     QLabel *modeLabel = new QLabel("模式:");
+    QLabel *OTLabel = new QLabel("命令超时:");//超时时间
+    OverTime = new QComboBox();
+    OverTime->addItem("无超时");
+    QStringList OTList;
+    for(uint8_t i = 1; i< 13 ;i++)
+    {
 
-     QLabel *OTLabel = new QLabel("命令超时:");//超时时间
-     OverTime = new QComboBox();
-     OverTime->addItem("无超时");
-     QStringList OTList;
-     for(uint8_t i = 1; i< 10 ;i++)
-     {
+     QString OTStr = QString::number(i);
+     OTStr += "s";
+     OTList << OTStr;
+    }
+    OverTime->addItems(OTList);
+    OverTime->setCurrentIndex(11);
 
-         QString OTStr = QString::number(i);
-         OTStr += "s";
-         OTList << OTStr;
-     }
-     OverTime->addItems(OTList);
-     OverTime->setCurrentIndex(9);
+    modeCombo = new QComboBox;
+    modeCombo->addItem("参数区");
+    modeCombo->addItem("保留区");
+    modeCombo->addItem("用户区1");
+    modeCombo->addItem("用户区2");
+    modeCombo->addItem("运行参数区");
 
-     modeCombo = new QComboBox;
-     modeCombo->addItem("参数区");
-     modeCombo->addItem("保留区");
-     modeCombo->addItem("用户区1");
-     modeCombo->addItem("用户区2");
+    QLabel *offsetLabel = new QLabel("偏移:");
+    offsetCombo = new QComboBox;
+    offsetCombo->addItem("最新记录");
+    offsetCombo->addItem("最新记录不擦除");
+    QStringList offsetList;
+    for(int i=0;i<32;i++)
+    {
+        QString offsetstr = QString::number(i);
+        offsetList << offsetstr;
+    }
+    offsetCombo->addItems(offsetList);
+    offsetCombo->setCurrentIndex(0);
 
-     QLabel *offsetLabel = new QLabel("偏移:");
-     offsetCombo = new QComboBox;
-     offsetCombo->addItem("最新记录");
-     QStringList offsetList;
-     for(int i=0;i<32;i++)
-     {
-         QString offsetstr = QString::number(i);
-         offsetList << offsetstr;
-     }
-     offsetCombo->addItems(offsetList);
-     offsetCombo->setCurrentIndex(0);
+    QLabel *lenthLabel = new QLabel("长度:");
+    lenthCombo = new QComboBox;
 
-     QLabel *lenthLabel = new QLabel("长度:");
-     lenthCombo = new QComboBox;
+    QStringList lenthList;
+    for(int i=0;i<17;i++)
+    {
+        QString LengthStr = QString::number(i);
+        lenthList+=LengthStr;
+    }
+    lenthCombo->addItems(lenthList);
+    lenthCombo->setCurrentIndex(16);
+    QLabel *dataLabel = new QLabel("数据:");
+    dataTedt = new QTextEdit;
+    dataTedt->setText("04 02 06 01 20 04 00 00 00 00 00 00 00 00 00 00");
+    dataTedt->setMaximumHeight(40);
+    dataTedt->setMaximumWidth(160);
 
-     QStringList lenthList;
-     for(int i=0;i<17;i++)
-     {
-         QString LengthStr = QString::number(i);
-         lenthList+=LengthStr;
-     }
-     lenthCombo->addItems(lenthList);
-     lenthCombo->setCurrentIndex(16);
-     QLabel *dataLabel = new QLabel("数据:");
-     dataTedt = new QTextEdit;
-     dataTedt->setText("01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16");
-     dataTedt->setMaximumHeight(40);
-     dataTedt->setMaximumWidth(160);
+    WRFileBtn = new QPushButton("文件操作");
 
-     WRFileBtn = new QPushButton("文件操作");
+    QGridLayout *fileLayout = new QGridLayout;
+    fileLayout->addWidget(readRadioBtn,0,0);
+    fileLayout->addWidget(writeRadioBtn,0,1);
+    fileLayout->addWidget(eraseRadioBtn,1,0);
+    fileLayout->addWidget(TargetIDLabel1, 2,0);
+    fileLayout->addWidget(TargetIDLineEdt1, 2,1);
+    fileLayout->addWidget(OTLabel,3,0);
+    fileLayout->addWidget(OverTime,3,1);
+    fileLayout->addWidget(modeLabel,4,0);
+    fileLayout->addWidget(modeCombo,4,1);
+    fileLayout->addWidget(offsetLabel,5,0);
+    fileLayout->addWidget(offsetCombo,5,1);
+    fileLayout->addWidget(lenthLabel,6,0);
+    fileLayout->addWidget(lenthCombo,6,1);
+    fileLayout->addWidget(dataLabel,7,0);
+    fileLayout->addWidget(dataTedt,8,0,1,2);
+    fileLayout->addWidget(WRFileBtn,9,0,1,2);
+    fileGroup->setLayout(fileLayout);
 
-     QGridLayout *fileLayout = new QGridLayout;
-     fileLayout->addWidget(readRadioBtn,0,0);
-     fileLayout->addWidget(writeRadioBtn,0,1);
-     fileLayout->addWidget(TargetIDLabel1, 1,0);
-     fileLayout->addWidget(TargetIDLineEdt1, 1,1);
-     fileLayout->addWidget(OTLabel,2,0);
-     fileLayout->addWidget(OverTime,2,1);
-     fileLayout->addWidget(modeLabel,3,0);
-     fileLayout->addWidget(modeCombo,3,1);
-     fileLayout->addWidget(offsetLabel,4,0);
-     fileLayout->addWidget(offsetCombo,4,1);
-     fileLayout->addWidget(lenthLabel,5,0);
-     fileLayout->addWidget(lenthCombo,5,1);
-     fileLayout->addWidget(dataLabel,6,0);
-     fileLayout->addWidget(dataTedt,7,0,1,2);
-     fileLayout->addWidget(WRFileBtn,8,0,1,2);
-     fileGroup->setLayout(fileLayout);
-
-     //射频测试
-     QGroupBox *radioGroup = new QGroupBox("射频性能");
-     radioGroup->setMaximumHeight(70);
-     radioGroup->setMaximumWidth(180);
-     radioBtn = new QPushButton("射频性能测试");
-     QGridLayout *radioLayout = new QGridLayout;
-     radioLayout->addWidget(radioBtn,0,0,1,2);
-     radioGroup->setLayout(radioLayout);
-
-     radioBtn->setCheckable(true);
-
- //! [0]
-     radioBtn->setAutoDefault(false);
+    //射频测试
+    QGroupBox *radioGroup = new QGroupBox("射频性能");
+    radioGroup->setMaximumHeight(70);
+    radioGroup->setMaximumWidth(MaxWidth);
+    radioBtn = new QPushButton("射频性能测试");
+    QGridLayout *radioLayout = new QGridLayout;
+    radioLayout->addWidget(radioBtn,0,0,1,2);
+    radioGroup->setLayout(radioLayout);
+    radioBtn->setCheckable(true);
+    radioBtn->setAutoDefault(false);
      //扩展窗口放在主界面
 //     createExtension();
- //! [1]
 
-     //整机测试
-      testBtn = new QPushButton("整机测试");
+
+    //整机测试
+    testBtn = new QPushButton("整机测试");
 //     QLabel *stateLable = new QLabel("执行成功");
 //     stateLable->setAlignment(Qt::AlignBottom | Qt::AlignLeft);
 //     stateLable->setFrameStyle(QFrame::Panel | QFrame::Sunken);
@@ -216,24 +300,24 @@ ConfigPage::ConfigPage(QWidget *parent) : QWidget(parent)
 //     bottomLayout->addWidget(testBtn);
 //     bottomLayout->addWidget(stateLable);
 
-     QVBoxLayout *leftLayout = new QVBoxLayout;
-     leftLayout->addWidget(timeGroup);
-     leftLayout->addWidget(paraGroup);
-     leftLayout->addWidget(messageGroup);
-     leftLayout->addSpacing(12);
-     leftLayout->addWidget(testBtn);
-     leftLayout->addStretch(1);
+    QVBoxLayout *leftLayout = new QVBoxLayout;
+    leftLayout->addWidget(paraGroup);
+    leftLayout->addWidget(messageGroup);
+//    leftLayout->addWidget(timeGroup);
+    leftLayout->addSpacing(12);
+    leftLayout->addWidget(testBtn);
+    leftLayout->addStretch(1);
 
-     QVBoxLayout *rightLayout = new QVBoxLayout;
-     rightLayout->addWidget(fileGroup);
-     rightLayout->addWidget(radioGroup);
-     rightLayout->addStretch(12);
+    QVBoxLayout *rightLayout = new QVBoxLayout;
+    rightLayout->addWidget(fileGroup);
+    rightLayout->addWidget(radioGroup);
+    rightLayout->addStretch(12);
 
-     QGridLayout *mainLayout = new QGridLayout;
-     mainLayout->addLayout(leftLayout,0,0,1,1);
-     mainLayout->addLayout(rightLayout,0,1,1,1);
+    QGridLayout *mainLayout = new QGridLayout;
+    mainLayout->addLayout(leftLayout,0,0,1,1);
+    mainLayout->addLayout(rightLayout,0,1,1,1);
 //     mainLayout->addWidget(extension,0,2,1,1);
-     setLayout(mainLayout);
+    setLayout(mainLayout);
 
 }
 
@@ -352,9 +436,10 @@ void ConfigPage::createExtension()
     device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
     device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
     device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
-    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
-    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
-    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
      //利用setModel()方法将数据模型与QTableView绑定
     infoDevice->setModel(device_model);
 //    infoDevice->setEditTriggers(QAbstractItemView::NoEditTriggers);//只读
@@ -424,29 +509,9 @@ void ConfigPage::ShowReadFileData(QByteArray Data_Src)
 }
 
 
-//时间更新
-void ConfigPage::updateTime()
-{
-    dateEdit->setDateTime(QDateTime::currentDateTime());
-}
-//更新时间数据
-/****************************************************
-串口通信 上位机->接收器 命令字90
-时间设置信息内容
-年月日时分秒：6字节 2017-08-01 14：40：30-> 17 08 01 14 40 30
-******************************************************/
-void ConfigPage::setTimebuf()
-{
-    QByteArray timebuff;
 
-    QString datasrc= dateEdit->text();
-    timebuff = QByteArray::fromHex(datasrc.toLatin1());
-    timebuff.remove(0,1);
-//    qDebug() << timebuff;
-    config_Btn = settimeBtnPD;//按键按下
-    emit sendsignal(timebuff);
-}
 //更新参数buff
+#if 0
 #define TAGP_PWR_IDX                                    1
 #define TAGP_PWR_Pos									4
 #define TAGP_WORKMODE_IDX                               2
@@ -454,15 +519,16 @@ void ConfigPage::setTimebuf()
 #define TAGP_WORKMODE_Msk								0x0f
 #define TAGP_WORKMODE_MAX_VALUE							0x01
 #define TAGP_KEYALARM_IDX								4
-#define OVER_TIME                                       9//9S
+#endif
+#define OVER_TIME                                       11//11S
 /****************************************************
 串口通信 上位机->接收器 命令F0
 参数设置信息内容
-目标ID：XXXXXXXX 4字节
+目标ID：XXXXXXXX 5字节
 超时时间:0~9  0：无超时时间  单位s
-保留：0000
+保留：00
 写参数区：01
-写最新参数:FFFF
+写最新参数:FF
 写长度：10
 数据内容：16字节
 ******************************************************/
@@ -471,62 +537,112 @@ void ConfigPage::setParaBuf()
 
     //参数buff
     QByteArray parabuff;
-    QString DestIDSrc = TargetIDLineEdt->text();
-    config_Btn = setparaBtnPD;//按键按下
-    if(DestIDSrc.length()<8)
+    QByteArray sendparabuff;
+    QString DestIDSrc;
+    DestIDSrc  = TargetIDLineEdt->text();
+    if(DestIDSrc.length()<(TagID_LEN*2))
     {
-        QByteArray error;
-        emit sendsignal(error);
+        emit sendMsgBox("腕带参数框填写正确的目标ID");
+        return;
     }
     else
     {
-        char txpower = 0x00;
-        char workmode = 0x00;
-        for(int i=0;i< 16;i++)
-            parabuff[i] = 0;
-        QString tag_txpower = pwrCombo->currentText();
-        if(tag_txpower == "-30dBm")
-            txpower |= (0<<TAGP_PWR_Pos);
-        else if(tag_txpower == "-20dBm")
-            txpower |= (1<<TAGP_PWR_Pos);
-        else if(tag_txpower == "-16dBm")
-            txpower |= (2<<TAGP_PWR_Pos);
-        else if(tag_txpower == "-12dBm")
-            txpower |= (3<<TAGP_PWR_Pos);
-        else if(tag_txpower == "-8dBm")
-            txpower |= (4<<TAGP_PWR_Pos);
-        else if(tag_txpower == "-4dBm")
-            txpower |= (5<<TAGP_PWR_Pos);
-        else if(tag_txpower == "0dBm")
-            txpower |= (6<<TAGP_PWR_Pos);
-        else if(tag_txpower == "4dBm")
-            txpower |= (7<<TAGP_PWR_Pos);
-        else
-            txpower|=(6<<TAGP_PWR_Pos);
-        QString tag_workmode = wModeCombo->currentText();
-        if("保存模式" == tag_workmode)
-            workmode|=0x00;
-        else
-            workmode|=0x01;
+        //工作模式
+        char workmode =0x00;
+        QString workmodeStr = wModeCombo->currentText();
+        if("单激活发射" == workmodeStr)
+            workmode = 0x00;
+        else if("自主发射" == workmodeStr)
+            workmode = 0x04;
+        else if("自适应单激活发射" == workmodeStr)
+            workmode = 0x02;
+        else if("自适应自主发射" == workmodeStr)
+            workmode = 0x06;
+        else if("保存模式" == workmodeStr)
+            workmode = 0x01;
+//        else
+//            workmode = 0x04;
 
-        QString tag_alarmtime = alarmCombo->currentText();
-        tag_alarmtime.chop(1);//移除最后一位s
-        char alarmtimeSrc = tag_alarmtime.toInt();
-        parabuff[TAGP_PWR_IDX] = txpower;//发射功率
-        parabuff[TAGP_WORKMODE_IDX] =workmode;//工作模式
-        parabuff[TAGP_KEYALARM_IDX] = alarmtimeSrc;//报警时间
-         QByteArray sendparabuff;
-//        QString DestIDSrc = TargetIDLineEdt->text();
-        QByteArray DestIDDec = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
-        sendparabuff+=DestIDDec;//目标ID
-        sendparabuff+=OVER_TIME;//超时时间
-        sendparabuff+=(char)(U_FILE_RESERVER>>8);//保留
-        sendparabuff+=(char)U_FILE_RESERVER;//保留
-        sendparabuff+=U_FILE_MODE_PARA;//内部参数区
-        sendparabuff+=(char)(U_FILE_OFFSET_RNEW>>8);
-        sendparabuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
-        sendparabuff+=(char)0x10;//长度
-        sendparabuff+=parabuff;
+        //发送周期
+        char sendperiod = 0x00;
+        QString sendperiodStr = P_SendPeriodCombo->currentText();
+        if("125ms" == sendperiodStr)
+            sendperiod = 0x00;
+        else if("500ms" == sendperiodStr)
+            sendperiod = 0x01;
+        else if("1s" == sendperiodStr)
+            sendperiod = 0x02;
+        else if("2s" == sendperiodStr)
+            sendperiod = 0x03;
+        else if("4s" == sendperiodStr)
+            sendperiod = 0x04;
+        else if("8s" == sendperiodStr)
+            sendperiod = 0x05;
+        else if("16s" == sendperiodStr)
+            sendperiod = 0x06;
+        else if("32s" == sendperiodStr)
+            sendperiod = 0x07;
+//        else
+//            sendperiod = 0x02;
+
+
+        //发射功率
+        char txpower=0x00;
+        QString txpowerStr = pwrCombo->currentText();
+        if("-30dBm" == txpowerStr)
+            txpower = 0x00;
+        else if("-20dBm" == txpowerStr )
+            txpower = 0x01;
+        else if("-16dBm" == txpowerStr)
+            txpower = 0x02;
+        else if("-12dBm" == txpowerStr)
+            txpower = 0x03;
+        else if("-8dBm" == txpowerStr)
+            txpower = 0x04;
+        else if("-4dBm" == txpowerStr)
+            txpower = 0x05;
+        else if("0dBm" == txpowerStr)
+            txpower = 0x06;
+        else if("4dBm" == txpowerStr)
+            txpower = 0x07;
+//        else
+//            txpower = 0x06;
+
+        //事件清除
+        char EventClearMothod=0x00;
+        QString EventClearMothodStr = P_EventClearMothodCombo->currentText();
+        if("标签自动撤销" == EventClearMothodStr)
+            EventClearMothod = 0x00;
+        else if("读写器清除" == EventClearMothodStr)
+            EventClearMothod = 0x01;
+        //低频信号门限
+        char BaseRssiThr;
+        QString BaseRssiThrStr = P_BaseRssiThrCombo->currentText();
+        BaseRssiThrStr.remove("dbm");//去掉单位dbm
+            BaseRssiThr = BaseRssiThrStr.toInt();
+        //传感参数
+        char SensorPara;
+        QString SensorParaStr = P_SensorParaLineEdt->text();
+        SensorPara = SensorParaStr.toInt();
+        for(int i = 0; i<16;i++)
+        {
+            parabuff[i] = 0x00;
+        }
+        parabuff[0] = workmode;
+        parabuff[1] = sendperiod;
+        parabuff[2] = txpower;
+        parabuff[3] = EventClearMothod;
+        parabuff[4] = BaseRssiThr;
+        parabuff[5] = SensorPara;
+        QByteArray DestIDDest = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
+        sendparabuff += U_CMD_PARA_SET;//命令字
+        sendparabuff += DestIDDest;//目标ID
+        sendparabuff += OVER_TIME;//超时时间
+        sendparabuff += (char)U_FILE_RESERVER;//保留
+        sendparabuff += U_FILE_MODE_PARA;//内部参数区
+        sendparabuff += (char)U_FILE_OFFSET_RNEW;//写最新参数
+        sendparabuff += (char)0x10;//长度
+        sendparabuff += parabuff;//参数
         qDebug() << "获取参数值:" << sendparabuff.toHex();
         config_Btn = setparaBtnPD;//按键按下
         emit sendsignal(sendparabuff);
@@ -540,9 +656,9 @@ void ConfigPage::setParaBuf()
 参数设置信息内容
 目标ID：XXXXXXXX 4字节
 超时时间:0~9  0：无超时时间  单位s
-保留：0000
-区选择：01~04
-写最新参数:FFFF
+保留：00
+区选择：00~04
+写最新参数:FF
 写长度：01~10
 数据内容：字节数，最大16字节
 -----------------------------------------------------
@@ -557,11 +673,16 @@ void ConfigPage::setParaBuf()
 void ConfigPage::WriteReadFile()
 {
     QString DestIDSrc1 = TargetIDLineEdt1->text();
-    if(DestIDSrc1.length()<8)
+    if(false == readRadioBtn->isChecked()&& false == writeRadioBtn->isChecked()
+            && false == eraseRadioBtn->isChecked())
     {
-        QByteArray error;
-        config_Btn = WriteFileBtnPD;//按键按下
-        emit sendsignal(error);
+        emit sendMsgBox("请选择操作方式");
+        return;
+    }
+    if(DestIDSrc1.length()<(TagID_LEN*2))
+    {
+        emit sendMsgBox("腕带参数框填写正确的目标ID");
+        return;
     }
     else
     {
@@ -574,7 +695,7 @@ void ConfigPage::WriteReadFile()
         }
         else
         {
-            OverTimeSrc.chop(1);//去掉单位s
+            OverTimeSrc.remove("s");//去掉单位s
             OverTimeDest = OverTimeSrc.toInt();
         }
         //参数区
@@ -596,27 +717,49 @@ void ConfigPage::WriteReadFile()
         {
             AreaDest = U_FILE_MODE_USER2;
         }
+        else if("运行参数区")
+        {
+            AreaDest = U_FILE_MODE_RUNPARA;
+        }
         //长度
         char LenthDest;
         QString LenthSrc = lenthCombo->currentText();
         LenthDest = LenthSrc.toInt();
+        //目标ID
+        QByteArray DestIDDest1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
         //写命令
         if(writeRadioBtn->isChecked())//写操作
         {
-            QByteArray WriteBuff;
-    //        QString DestIDSrc1 = TargetIDLineEdt1->text();
-            QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
-            WriteBuff+=U_CMD_FILE_WRITE;//命令
-            WriteBuff+=DestIDDec1;//目标ID
+            QByteArray WriteBuff;            
+            WriteBuff+=U_CMD_WRITE_FILE;//命令
+            WriteBuff+=DestIDDest1;//目标ID
             WriteBuff+=OverTimeDest;//超时时间
-            WriteBuff+=(char)(U_FILE_RESERVER>>8);//保留
             WriteBuff+=(char)U_FILE_RESERVER;//保留
             WriteBuff+=AreaDest;//操作区
-            WriteBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
-            WriteBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
+            //偏移
+            QString OffsetSrc =offsetCombo->currentText();
+            if("最新记录" == OffsetSrc)
+            {
+                WriteBuff+=(char)U_FILE_OFFSET_WNEW_ERASE;//写最新参数，擦除
+            }
+            else if("最新记录不擦除" == OffsetSrc)
+            {
+                WriteBuff+=(char)U_FILE_OFFSET_WNEW_NOERASE;//写最新参数
+            }
+            else
+            {
+                emit sendMsgBox("写偏移错误");
+                return;
+            }
             WriteBuff+=LenthDest;//长度
+            QByteArray DataDes;
+            for(int i = 0; i<LenthDest;i++)
+                DataDes[i] = 0xff;
             QString DataSrc = dataTedt->toPlainText();
-            QByteArray DataDes = QByteArray::fromHex(DataSrc.toLatin1());
+            if(DataSrc.length() >0)
+            {
+                DataDes = QByteArray::fromHex(DataSrc.toLatin1());
+            }
             WriteBuff.append(DataDes,(int)LenthDest);
             qDebug() << WriteBuff.toHex();
             config_Btn = WriteFileBtnPD;//按键按下
@@ -625,32 +768,40 @@ void ConfigPage::WriteReadFile()
         else if(readRadioBtn->isChecked())//读操作
         {
             QByteArray ReadBuff;
-            QString DestIDSrc1 = TargetIDLineEdt1->text();
-            QByteArray DestIDDec1 = QByteArray::fromHex(DestIDSrc1.toLatin1());//目标ID
-
-            ReadBuff+=U_CMD_FILE_READ;//命令
-            ReadBuff+=DestIDDec1;//目标ID
+            ReadBuff+=U_CMD_READ_FILE;//命令
+            ReadBuff+=DestIDDest1;//目标ID
             ReadBuff+=OverTimeDest;//超时时间
-            ReadBuff+=(char)(U_FILE_RESERVER>>8);//保留
             ReadBuff+=(char)U_FILE_RESERVER;//保留
             ReadBuff+=AreaDest;//操作区
             //偏移
             QString OffsetSrc =offsetCombo->currentText();
             if("最新记录" == OffsetSrc)
             {
-                ReadBuff+=(char)(U_FILE_OFFSET_RNEW>>8);
                 ReadBuff+=(char)U_FILE_OFFSET_RNEW;//写最新参数
             }
             else
             {
                 char OffsetDest = OffsetSrc.toInt();
-                ReadBuff+=(char)0x00;
                 ReadBuff+=OffsetDest;
             }
             ReadBuff+=LenthDest;//长度
             qDebug() << ReadBuff.toHex();
             config_Btn = ReadFileBtnPD;//按键按下
             emit sendsignal(ReadBuff);
+        }
+        else if(eraseRadioBtn->isChecked())//擦除
+        {
+            QByteArray EraseBuff;
+            EraseBuff+=U_CMD_ERASE_FILE;//命令
+            EraseBuff+=DestIDDest1;//目标ID
+            EraseBuff+=OverTimeDest;//超时时间
+            EraseBuff+=(char)U_FILE_RESERVER;//保留
+            EraseBuff+=AreaDest;//操作区
+            EraseBuff+=(char)0x00;//保留
+            EraseBuff+=(char)0x00;//保留
+            qDebug() << EraseBuff.toHex();
+            config_Btn = EraseFileBtnPD;//按键按下
+            emit sendsignal(EraseBuff);
         }
     }
 
@@ -678,25 +829,130 @@ QByteArray ConfigPage::QString2Unicode(QString src)
     }
     return unic;
 }
+
+//时间更新
+void ConfigPage::updateTime()
+{
+    dateEdit->setDateTime(QDateTime::currentDateTime());
+}
+//更新时间数据
+/****************************************************
+串口通信 上位机->接收器 命令字89
+时间设置信息内容
+0~4:目标ID
+(1)、当ID为0xFFFFFFFFFF群发
+(2)、当ID为指定设备ID时，1对1发送
+5:消息分类
+bit7~4:0-日历 1-通知
+bit3~0:消息编号，每发布一次消息，编号加加，饱和卷绕
+6:消息长度
+7~12:
+年月日时分秒：6字节 2017-08-01 14：40：30-> 17 08 01 14 40 30
+******************************************************/
+void ConfigPage::setTimebuf()
+{
+    QByteArray msgbuff;
+    QByteArray timebuff;
+    QString datasrc;
+    uint8_t msg_info;
+    msgbuff+=U_CMD_MSG_PUSH;//命令
+    if(false == msgAllRadioBtn->isChecked()&& false == msgDestRadioBtn->isChecked())
+    {
+        emit sendMsgBox("请选择消息方式");
+        return;
+    }
+    if(false == msgTypeCalRadioBtn->isChecked())
+    {
+        emit sendMsgBox("请选择消息类别为时间");
+        return;
+    }
+    if(msgAllRadioBtn->isChecked())//群发
+    {
+        msgbuff+=QByteArray::fromHex(MSG_DESTID_ALL);//目标ID
+    }
+    else
+    {
+        if(TargetIDLineEdt->text().length() < (TagID_LEN*2))
+        {
+            emit sendMsgBox("腕带参数框填写正确的目标ID");
+            return;
+        }
+        QString DestIDSrc = TargetIDLineEdt->text();
+        QByteArray DestIDDest = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
+        msgbuff+= DestIDDest;
+    }
+    msg_info = (msg_calendar<<U_MSG_TYPE_Pos)&U_MSG_TYPE_Msk;//消息分类
+    MSG_Store.MSG2_Seq++;//消息序号
+    if(MSG_Store.MSG2_Seq > U_MSG_SEQ_MAX)
+        MSG_Store.MSG2_Seq = 1;
+    msg_info |= (MSG_Store.MSG2_Seq<<U_MSG_SEQ_Pos)&U_MSG_SEQ_Msk;//消息序号
+    //时间内容
+    datasrc = dateEdit->text();
+    timebuff = QByteArray::fromHex(datasrc.toLatin1());
+    timebuff.remove(0,1);
+    msgbuff+=msg_info;//消息分类、消息编号
+    msgbuff+=MSG2_FIX_LEN;//长度，固定6
+    msgbuff+=timebuff;//时间
+    config_Btn = settimeBtnPD;//按键按下
+    emit sendsignal(msgbuff);
+}
 /****************************************************
 串口通信 上位机->接收器
 消息命令89
-信息内容构成：消息长度+消息内容
-消息长度1字节
-消息内容
+信息内容
+0~4:目标ID
+(1)、当ID为0xFFFFFFFFFF群发
+(2)、当ID为指定设备ID时，1对1发送
+5:消息分类
+bit7~4:0-日历 1-通知
+bit3~0:消息编号，每发布一次消息，编号加加，饱和卷绕
+6:消息长度
+7~x:消息内容
 ******************************************************/
 #define GBK 1
 void ConfigPage::msgSend()
 {
     QByteArray MsgBuff;//消息缓存
+    uint8_t msg_info;
     QString MsgSrc = messageTedt->toPlainText();
 #if GBK
     QByteArray MsgDest = this->U2GBK(MsgSrc);
 #else
     QByteArray MsgDest = this->QString2Unicode(MsgSrc);
 #endif
-    char MsgLen = MsgDest.length();
+    if(false == msgAllRadioBtn->isChecked()&& false == msgDestRadioBtn->isChecked())
+    {
+        emit sendMsgBox("请选择消息方式");
+        return;
+    }
+    if(false == msgTypeNewsRadioBtn->isChecked())
+    {
+        emit sendMsgBox("请选择消息类别为通知");
+        return;
+    }
     MsgBuff+=U_CMD_MSG_PUSH;//消息命令
+    if(msgAllRadioBtn->isChecked())//群发
+    {
+        MsgBuff+=QByteArray::fromHex(MSG_DESTID_ALL);//目标ID
+    }
+    else
+    {
+        if(TargetIDLineEdt->text().length() < (TagID_LEN*2))
+        {
+            emit sendMsgBox("腕带参数框填写正确的目标ID");
+            return;
+        }
+        QString DestIDSrc = TargetIDLineEdt->text();
+        QByteArray DestIDDest = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
+        MsgBuff+= DestIDDest;
+    }
+    msg_info = (msg_news<<U_MSG_TYPE_Pos)&U_MSG_TYPE_Msk;//消息分类
+    MSG_Store.MSG1_Seq++;//消息序号
+    if(MSG_Store.MSG1_Seq > U_MSG_SEQ_MAX)
+        MSG_Store.MSG1_Seq = 1;
+    msg_info |= (MSG_Store.MSG1_Seq<<U_MSG_SEQ_Pos)&U_MSG_SEQ_Msk;//消息序号
+    MsgBuff+=msg_info;//消息分类、消息序号
+    char MsgLen = MsgDest.length();
     MsgBuff+=MsgLen;//消息长度
     MsgBuff+=MsgDest;//消息内容
     config_Btn = MsgBtnPD;//按键按下
@@ -715,18 +971,18 @@ void ConfigPage::DeviceTest()
 {
     QString DestIDSrc = TargetIDLineEdt->text();
     config_Btn = DeviceTestPD;//按键按下
-    if(DestIDSrc.length()<8)
+    if(DestIDSrc.length()<(TagID_LEN*2))
     {
-        QByteArray error;
-        emit sendsignal(error);
+        emit sendMsgBox("腕带参数框填写正确的目标ID");
+        return;
     }
     else
     {
         QByteArray DeviceTestBuf;
-        DeviceTestBuf[0] = (char)U_CMD_DEVICE_TEST;
+        DeviceTestBuf += (char)U_CMD_DEVICE_TEST;
         QByteArray DestIDDec = QByteArray::fromHex(DestIDSrc.toLatin1());//目标ID
         DeviceTestBuf+=DestIDDec;
-        DeviceTestBuf+= (char)0x01;
+        DeviceTestBuf+= (char)0x00;
         qDebug() <<"整机测试"<< DeviceTestBuf.toHex();
         emit sendsignal(DeviceTestBuf);
     }
@@ -785,9 +1041,10 @@ void ConfigPage::SearchTag()
     device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
     device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
     device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
-    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
-    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
-    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
     qDebug() <<"查询标签"<< SearchTagBuf.toHex();
     emit sendsignal(SearchTagBuf);
 }
@@ -887,9 +1144,10 @@ void ConfigPage::AutoReportOpen()
     device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
     device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
     device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
-    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
-    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
-    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
     qDebug() <<"打开自动上报"<< AutoReportBuf.toHex();
     emit sendsignal(AutoReportBuf);
 }
@@ -950,7 +1208,7 @@ void ConfigPage::msgMaxLength()
 {
     QString textContent = messageTedt->toPlainText();
     int length = textContent.count();
-    int maxLength = 64; // 最大字符数
+    int maxLength = 110; // 最大字符数
     if(length > maxLength)
     {
         int position = messageTedt->textCursor().position();

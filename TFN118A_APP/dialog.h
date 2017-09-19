@@ -32,6 +32,9 @@ public slots:
     void OnHelp();//帮助
     void ReadComData();
     void GetReaderID();//获取读写器ID
+    void ShowMsgBox(QString);
+
+
 private:
     void createIcons();
     QPushButton *ReaderBtn;//读写器ID
@@ -51,7 +54,8 @@ private:
         QString RSSI;//信号强度
         QString State;//状态
         QString DATA;//传感数据
-        QString BASEID;//边界管理器ID
+        QString B_DOORID;//门口边界管理器ID
+        QString B_NORMALID;//普通边界管理器ID
         QString VER;//版本信息
         int Device_Num;//设备数量
         int Device_idx;
@@ -60,7 +64,9 @@ private:
         uint32_t report_cnt;//上报次数
     }Device_Info_Typedef;
     Device_Info_Typedef Device_Info;
-//    QString filePath;//帮助文件路径
+    //    QString filePath;//帮助文件路径
 };
+
+
 
 #endif // DIALOG_H
