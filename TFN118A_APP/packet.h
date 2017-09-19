@@ -77,6 +77,10 @@ typedef enum
     U_CMD_DEVICE_TEST = 0XF3    //整机测试
 }U_CMD_Typdef;
 
+typedef enum
+{
+    U_CMD_MSG_PUSH_ACK = 0X09//消息命令回复
+}U_CMD_ACK_Typedef;
 //参数设置
 #define U_PARA_SET_LEN                          0X0023    //长度
 //文件操作   
