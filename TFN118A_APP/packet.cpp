@@ -37,7 +37,7 @@ bool packet::unPACK(QByteArray *des, QByteArray src)
                 if(src.length()>(U_HEAD_LEN+U_HEAD_LEN))//有长度数据
                 {
                     uint16_t LenSrc = ((uint16_t)(src[U_LEN_IDX]<<8)|(uint8_t)src[U_LEN_IDX+1]);
-                    PacketLen = LenSrc + U_HEAD_LEN + U_LENTH_LEN + U_CRC_LEN;//获得整包数据长度
+                    PacketLen = LenSrc + U_HEAD_LEN + U_LENTH_LEN;//获得整包数据长度
                     u_state = 1;
                     qDebug("获取长度%d",PacketLen);
                 }
@@ -71,11 +71,11 @@ uint16_t packet::CRC_Check(QByteArray src)
     char *crcsrc = src.data();//转成char类型
     uint16_t pkt_len;//包长度
     uint16_t CRC;
-    uint16_t crc_len = U_LENTH_LEN + ((uint16_t)src[U_LEN_IDX]|(uint8_t)src[U_LEN_IDX+1]);//CRC长度
+    uint16_t crc_len = U_LENTH_LEN + ((uint16_t)src[U_LEN_IDX]|(uint8_t)src[U_LEN_IDX+1]) - U_CRC_LEN;//CRC数据长度
     CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],crc_len);//获取CRC校验值
     //获取crc值
-    uint16_t info_len = (uint16_t)src[U_LEN_IDX]|(uint8_t)src[U_LEN_IDX+1];//信息长度
-    uint16_t crc_idx = U_HEAD_LEN + U_LENTH_LEN + info_len;//crc索引号
+    uint16_t info_len = (uint16_t)src[U_LEN_IDX]|(uint8_t)src[U_LEN_IDX+1];//信息长度+crc长度
+    uint16_t crc_idx = U_HEAD_LEN + U_LENTH_LEN + info_len - U_CRC_LEN;//crc索引号
     if( (char)(CRC>>8) == src[crc_idx] &&  (char)(CRC) == src[crc_idx+1] )
     {
         qDebug() <<"CRC校验OK";

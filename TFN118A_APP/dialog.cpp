@@ -180,7 +180,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                     QByteArray P_DES = P_SRC;//包
                     uint16_t info_len = ((uint16_t)P_SRC[U_LEN_IDX]<<8)|(uint8_t)P_SRC[U_LEN_IDX+1];//信息长度
 
-                    uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
+                    uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len - U_CRC_LEN;//除了CRC长度
                     P_DES.truncate(pkt_len);//移除CRC后面的数据
                     P_DES.remove(0,U_DATA_IDX+U_FILE_STATE_LEN);//找到读到的数据内容,移除状态长度
 
@@ -242,7 +242,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
             {
                 QByteArray P_DES = P_SRC;//包
                 uint16_t info_len = ((uint16_t)P_SRC[U_LEN_IDX]<<8)|(uint8_t)P_SRC[U_LEN_IDX+1];//信息长度
-                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
+                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len- U_CRC_LEN;//除了CRC长度
                 P_DES.truncate(pkt_len);//移除CRC后面的数据
                 P_DES.remove(0,U_DATA_IDX);//找到读到的数据内容
                 QString DataDes = QString::fromLatin1(P_DES.toHex());
@@ -257,7 +257,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 RunStateLabel->setText("获取设备信息");
                 QByteArray P_DES = P_SRC;//包
                 uint16_t info_len = ((uint16_t)P_SRC[U_LEN_IDX]<<8)|(uint8_t)P_SRC[U_LEN_IDX+1];//信息长度
-                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
+                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len- U_CRC_LEN;//除了CRC长度
                 P_DES.truncate(pkt_len);//移除CRC后面的数据
                 P_DES.remove(0,U_DATA_IDX);//找到读到的数据内容
                 Device_Info.PKT_Max_Num = P_DES[0];//最大编号
@@ -351,7 +351,7 @@ void Dialog::PacketDeal(QByteArray P_SRC)
 
                 QByteArray P_DES = P_SRC;//包
                 uint16_t info_len = ((uint16_t)P_SRC[U_LEN_IDX]<<8)|(uint8_t)P_SRC[U_LEN_IDX+1];//信息长度
-                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len;//除了CRC长度
+                uint16_t pkt_len = U_HEAD_LEN + U_LENTH_LEN + info_len- U_CRC_LEN;//除了CRC长度
                 P_DES.truncate(pkt_len);//移除CRC后面的数据
                 P_DES.remove(0,U_DATA_IDX);//找到读到的数据内容
                 Device_Info.PKT_Max_Num = P_DES[0];//最大编号
@@ -372,13 +372,15 @@ void Dialog::PacketDeal(QByteArray P_SRC)
                 if(Device_Info.Device_Num == 0)
                 {
                     m_configpage->device_model->clear();
+
                     m_configpage->device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
                     m_configpage->device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
                     m_configpage->device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
                     m_configpage->device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
-                    m_configpage->device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
-                    m_configpage->device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
-                    m_configpage->device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+                    m_configpage->device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+                    m_configpage->device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+                    m_configpage->device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+                    m_configpage->device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
                 }
                 P_DES.remove(0,3);//标签内容
                 QString TagDataDes = QString::fromLatin1(P_DES.toHex());
@@ -493,11 +495,13 @@ void Dialog::GetReaderID()
     ReaderIDBuff[U_ID_IDX+4] = (char)0xff;//读写器ID
     ReaderIDBuff[U_SEQ_IDX] = U_SEQ_Value;//流水号
     ReaderIDBuff[U_CMD_IDX] = U_CMD_READER_ID;//命令
-    char U_LengthSrc = ReaderIDBuff.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+    char U_LengthSrc = ReaderIDBuff.length()-U_HEAD_LEN-U_LENTH_LEN+ U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
     ReaderIDBuff[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
     ReaderIDBuff[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
     //CRC
-    int U_CRCLengthSrc = ReaderIDBuff.length()-U_HEAD_LEN;//包长度-帧头
+    int U_CRCLengthSrc = ReaderIDBuff.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
+
+
     char *crcsrc = ReaderIDBuff.data();
     uint16_t CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
     ReaderIDBuff+=(char)(CRC>>8);
@@ -556,11 +560,11 @@ void Dialog::SendData(QByteArray data)
     if(settimeBtnPD ==m_configpage->config_Btn)//时间设置按钮按下
     {
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -572,11 +576,11 @@ void Dialog::SendData(QByteArray data)
     else if(MsgBtnPD == m_configpage->config_Btn)//消息处理
     {
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -588,12 +592,11 @@ void Dialog::SendData(QByteArray data)
     {
 
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -608,11 +611,11 @@ void Dialog::SendData(QByteArray data)
     {
 
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -626,11 +629,11 @@ void Dialog::SendData(QByteArray data)
     {
         m_configpage->ClearReadFileData();
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -642,11 +645,11 @@ void Dialog::SendData(QByteArray data)
     {
         m_configpage->ClearReadFileData();
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -657,11 +660,11 @@ void Dialog::SendData(QByteArray data)
     else if(SesrchTagPD == m_configpage->config_Btn )//查询标签
     {
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -672,11 +675,11 @@ void Dialog::SendData(QByteArray data)
     else if(AutoReportPD == m_configpage->config_Btn)//自动上报
     {
         send_data+=data;//命令字+信息内容
-        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
         send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
         send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
         //CRC
-        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
         char *crcsrc = send_data.data();//转化成CHAR* 类型
         CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
         send_data+=(char)(CRC>>8);
@@ -688,18 +691,18 @@ void Dialog::SendData(QByteArray data)
     else if(DeviceTestPD == m_configpage->config_Btn)//设备测试
     {
 
-            send_data+=data;//命令字+信息内容
-            uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN;//包长度-帧头-长度
-            send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
-            send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
-            //CRC
-            int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//包长度-帧头
-            char *crcsrc = send_data.data();//转化成CHAR* 类型
-            CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
-            send_data+=(char)(CRC>>8);
-            send_data+=(char)(CRC);
-            my_serial->sendData(send_data);
-            qDebug() <<"整机测试:"<< send_data.toHex();
+        send_data+=data;//命令字+信息内容
+        uint16_t U_LengthSrc = send_data.length()-U_HEAD_LEN-U_LENTH_LEN + U_CRC_LEN;//长度=包长度-帧头-长度+CRC长度
+        send_data[U_LEN_IDX] = (char)(U_LengthSrc>>8);//长度
+        send_data[U_LEN_IDX+1] = (char)U_LengthSrc;//长度
+        //CRC
+        int U_CRCLengthSrc = send_data.length()-U_HEAD_LEN;//CRC校验长度，包长度-帧头
+        char *crcsrc = send_data.data();//转化成CHAR* 类型
+        CRC = m_crc16->getcrc16((uint8_t *)&crcsrc[U_LEN_IDX],U_CRCLengthSrc);
+        send_data+=(char)(CRC>>8);
+        send_data+=(char)(CRC);
+        my_serial->sendData(send_data);
+        qDebug() <<"整机测试:"<< send_data.toHex();
     }
     RunStateLabel->clear();
     ReceiveData.clear();

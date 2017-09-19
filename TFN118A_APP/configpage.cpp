@@ -1081,9 +1081,12 @@ void ConfigPage::SearchReader()
     device_model->clear();
     device_model->setHorizontalHeaderItem(0,new QStandardItem(QObject::tr("TYPE")));//传感类型
     device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
-    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("RSSI")));
-    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("DATA")));
-    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("VER")));
+    device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
+    device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
     qDebug() <<"查询读写器"<< SearchReaderBuf.toHex();
     emit sendsignal(SearchReaderBuf);
 }
@@ -1194,9 +1197,10 @@ void ConfigPage::AutoReportClose()
     device_model->setHorizontalHeaderItem(1,new QStandardItem(QObject::tr("ID")));
     device_model->setHorizontalHeaderItem(2,new QStandardItem(QObject::tr("State")));
     device_model->setHorizontalHeaderItem(3,new QStandardItem(QObject::tr("RSSI")));
-    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("DATA")));
-    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("BASEID")));//边界管理器ID
-    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("VER")));
+    device_model->setHorizontalHeaderItem(4,new QStandardItem(QObject::tr("数据")));//传感值
+    device_model->setHorizontalHeaderItem(5,new QStandardItem(QObject::tr("门口边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(6,new QStandardItem(QObject::tr("普通边界")));//边界管理器ID
+    device_model->setHorizontalHeaderItem(7,new QStandardItem(QObject::tr("版本")));
     qDebug() <<"关闭自动上报"<< AutoReportBuf.toHex();
     emit sendsignal(AutoReportBuf);
 }
